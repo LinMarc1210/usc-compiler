@@ -140,10 +140,12 @@ ASTTOCODE(ASTFuncExpr) // "FuncExpr: "
 
 ASTTOCODE(ASTIncExpr) // "IncExpr: "
     // PA1: Implement
+    output << "++" << mIdent.getName();
 }
 
 ASTTOCODE(ASTDecExpr) // "DecExpr: "
     // PA1: Implement
+    output << "--" << mIdent.getName();
 }
 
 ASTTOCODE(ASTAddrOfArray) // "AddrOfArray: "
@@ -264,6 +266,7 @@ ASTTOCODE(ASTWhileStmt) // "WhileStmt"
 
 ASTTOCODE(ASTExprStmt) // "ExprStmt"
     // PA1: Implement
+    mExpr->ASTtoCode(output, depth + 1);
 }
 
 ASTTOCODE(ASTNullStmt) // "NullStmt"
@@ -284,10 +287,27 @@ ASTTOCODE(ASTContinueStmt) // "ContinueStmt"
 
 ASTTOCODE(ASTForStmt) // "ForStmt"
     // PA1: Implement
+    OUTS();
+    output << "for (";
+    minitStmt->ASTtoCode(output, depth + 1);
+    mcondExpr->ASTtoCode(output, depth + 1);
+    output << "; ";
+    mstepStmt->ASTtoCode(output, depth + 1);
+    output << ") {" << std::endl;
+    mbodyStmt->ASTtoCode(output, depth + 2);
+    OUTS();
+    output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTDoWhileStmt) // "DoWhileStmt"
     // PA1: Implement
+    OUTS();
+    output << "do {" << std::endl;
+    mLoopStmt->ASTtoCode(output, depth + 2);
+    OUTS();
+    output << "} while (";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ");" << std::endl;
 }
 
 ASTTOCODE(ASTSwitchStmt) // "SwitchStmt"
