@@ -21,14 +21,65 @@ using std::shared_ptr;
 
 ASTTOCODE(ASTProgram)
     // PA1: Implement
+    // output << "Program:" << std::endl;
+    for (auto& func : mFuncs) {  // member name is from ASTNodes.h class ASTProgram
+        func->ASTtoCode(output, depth + 1);
+    }
 }
 
 ASTTOCODE(ASTFunction) // "Function: "
     // PA1: Implement
+	switch (mReturnType)
+	{
+		case Type::Void:
+			output << "void ";
+			break;
+		case Type::Int:
+			output << "int ";
+			break;
+		case Type::Char:
+			output << "char ";
+			break;
+		default:
+			output << "Shouldn't have gotten here. ";
+			break;
+	}
+
+	output << mIdent.getName() << " (";
+	for (auto arg : mArgs)
+	{
+		arg->ASTtoCode(output, depth + 1);
+	}
+	output << ") {" << std::endl;
+	mBody->ASTtoCode(output, depth + 1);
+	output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTArgDecl) // "ArgDecl: "
     // PA1: Implement
+    OUTS();
+    switch (mIdent.getType())
+	{
+		case Type::Void:
+			output << "void ";
+			break;
+		case Type::Int:
+			output << "int ";
+			break;
+		case Type::Char:
+			output << "char ";
+			break;
+		case Type::IntArray:
+			output << "int[] ";
+			break;
+		case Type::CharArray:
+			output << "char[] ";
+			break;
+		default:
+			output << "Shouldn't have gotten here...";
+			break;
+	}
+	output << mIdent.getName() << std::endl;
 }
 
 ASTTOCODE(ASTArraySub) // "ArraySub: "
@@ -61,6 +112,7 @@ ASTTOCODE(ASTNotExpr)
 
 ASTTOCODE(ASTConstantExpr)
     // PA1: Implement
+	output << mValue;
 }
 
 ASTTOCODE(ASTStringExpr)
@@ -107,10 +159,29 @@ ASTTOCODE(ASTDecl) // "Decl: "
 // Statements
 ASTTOCODE(ASTCompoundStmt) // CompoundStmt:"
     // PA1: Implement
+    OUTS();
+	for (auto decl : mDecls)
+	{
+		decl->ASTtoCode(output, depth + 1);
+	}
+	for (auto stmt : mStmts)
+	{
+		stmt->ASTtoCode(output, depth + 1);
+	}
 }
 
 ASTTOCODE(ASTReturnStmt) // "ReturnStmt:
     // PA1: Implement
+	if (!mExpr)
+	{
+		output << "return;" << std::endl;
+	}
+	else
+	{
+		output << "return ";
+		mExpr->ASTtoCode(output, depth + 1);
+		output << ";" << std::endl;
+	}
 }
 
 ASTTOCODE(ASTAssignStmt) // "AssignStmt: "
