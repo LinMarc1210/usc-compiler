@@ -9,11 +9,6 @@ llvm/
 *tar
 *.tar.xz
 
-# LLVM compilation products
-bin/
-lib/
-llvm/
-
 # Compiler executable
 uscc/bin/uscc
 
