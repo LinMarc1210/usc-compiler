@@ -1,0 +1,33 @@
+// peel02.usc
+//
+// Byounguk: Test case for peeling + lifting + optimization
+//
+// Not peelable while - peelable while
+
+int main()
+{
+    int x = 1;
+    int y = 9;
+    int z = 10;
+
+    printf("start1!\n");
+    while (x < 10)
+    {
+        x = z + 4;
+        z = y + 3;
+        printf("y = %d\n", y);
+        ++x;
+    }
+
+    y = 100;
+    z = x + y;
+    printf("start2!\n");
+    while (x < 20)
+    {
+        y = z + 4;
+        z = y + 3;
+        printf("y = %d\n", y);
+        ++x;
+    }
+    return 0;
+}

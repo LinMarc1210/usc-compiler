@@ -1,0 +1,20 @@
+// lifting16.usc
+// Part 5: Switch-Case - Simple switch with cases
+// Tests: ASTSwitchStmt, ASTCaseStmt toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int x = 2;
+	int result = 0;
+	switch (x)
+	{
+		case 1:
+			result = 10;
+		case 2:
+			result = 20;
+		case 3:
+			result = 30;
+	}
+	return result;
+}

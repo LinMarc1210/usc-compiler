@@ -1,0 +1,37 @@
+// peel05.usc
+//
+// Byounguk: Test case for peeling + lifting + optimization
+//
+// Outer - Peelable
+// Inner - Peelable
+
+int main()
+{
+    int x = 2;
+    int y = 9;
+    int z = 100;
+    if (x < y) {
+        printf("x < y\n");
+    }
+    else {
+        z = 500;
+    }
+    z = x + 100;
+    printf("start!\n");
+    while (x < 10)
+    {
+        z = 10;
+        printf("Inner start!\n");
+        while (y < 20) {
+            x = z + 4;
+            z = y + 3;
+            printf("y2 = %d\n", y);
+            ++y;
+        }
+        x = z + 4;
+        z = y + 3;
+        printf("y2 = %d\n", y);
+        ++x;
+    }
+    return 0;
+}

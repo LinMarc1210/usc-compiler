@@ -1,0 +1,20 @@
+// lifting17.usc
+// Part 5: Switch-Case - Switch with default
+// Tests: ASTSwitchStmt, ASTCaseStmt, ASTDefaultStmt toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int x = 5;
+	int result = 0;
+	switch (x)
+	{
+		case 1:
+			result = 10;
+		case 2:
+			result = 20;
+		default:
+			result = 99;
+	}
+	return result;
+}
