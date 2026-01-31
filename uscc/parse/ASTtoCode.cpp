@@ -312,12 +312,44 @@ ASTTOCODE(ASTDoWhileStmt) // "DoWhileStmt"
 
 ASTTOCODE(ASTSwitchStmt) // "SwitchStmt"
     // PA1: Implement
+    OUTS();
+    output << "switch (";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ")" << std::endl;
+    OUTS();
+    output << "{" << std::endl;
+    for (auto& stmt : case_default_stmts)
+    {
+        if (auto caseStmt = std::dynamic_pointer_cast<ASTCaseStmt>(stmt)) {
+            caseStmt->ASTtoCode(output, depth + 1);
+        }
+        else if (auto defaultStmt = std::dynamic_pointer_cast<ASTDefaultStmt>(stmt)){
+            defaultStmt->ASTtoCode(output, depth + 1);
+        }
+    }
+    OUTS();
+    output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTCaseStmt) // "CaseStmt"
     // PA1: Implement
+    OUTS();
+    output << "case ";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ":" << std::endl;
+
+    for (auto stmt : mStmts)
+	{
+		stmt->ASTtoCode(output, depth + 1);
+	}
 }
 
 ASTTOCODE(ASTDefaultStmt) // "DefaultStmt"
     // PA1: Implement
+    OUTS();
+    output << "default:" << std::endl;
+    for (auto stmt : mStmts)
+    {
+        stmt->ASTtoCode(output, depth + 1);
+    }
 }
