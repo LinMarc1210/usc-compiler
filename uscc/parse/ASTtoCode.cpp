@@ -140,12 +140,26 @@ ASTTOCODE(ASTFuncExpr) // "FuncExpr: "
 
 ASTTOCODE(ASTIncExpr) // "IncExpr: "
     // PA1: Implement
-    output << "++" << mIdent.getName();
+    if (depth >= 0) {
+        OUTS();
+        output << "++" << mIdent.getName();
+        output << ";";
+    }
+    else {
+        output << "++" << mIdent.getName();
+    }
 }
 
 ASTTOCODE(ASTDecExpr) // "DecExpr: "
     // PA1: Implement
-    output << "--" << mIdent.getName();
+    if (depth >= 0) {
+        OUTS();
+        output << "--" << mIdent.getName();
+        output << ";" << std::endl;
+    }
+    else {
+        output << "--" << mIdent.getName();
+    }
 }
 
 ASTTOCODE(ASTAddrOfArray) // "AddrOfArray: "
@@ -266,7 +280,12 @@ ASTTOCODE(ASTWhileStmt) // "WhileStmt"
 
 ASTTOCODE(ASTExprStmt) // "ExprStmt"
     // PA1: Implement
-    mExpr->ASTtoCode(output, depth + 1);
+    if (depth >= 0) {
+        mExpr->ASTtoCode(output, depth + 1);
+    }
+    else {
+        mExpr->ASTtoCode(output, -1);
+    }
 }
 
 ASTTOCODE(ASTNullStmt) // "NullStmt"
@@ -292,7 +311,7 @@ ASTTOCODE(ASTForStmt) // "ForStmt"
     minitStmt->ASTtoCode(output, depth + 1);
     mcondExpr->ASTtoCode(output, depth + 1);
     output << "; ";
-    mstepStmt->ASTtoCode(output, depth + 1);
+    mstepStmt->ASTtoCode(output, -1);   // avoid extra semicolon
     output << ") {" << std::endl;
     mbodyStmt->ASTtoCode(output, depth + 2);
     OUTS();
