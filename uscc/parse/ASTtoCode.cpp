@@ -100,10 +100,16 @@ ASTTOCODE(ASTLogicalOr)
 
 ASTTOCODE(ASTBinaryCmpOp)
     // PA1: Implement
+    mLHS->ASTtoCode(output, depth);
+    output << " " << Token::Values[mOp] << " ";
+    mRHS->ASTtoCode(output, depth);
 }
 
 ASTTOCODE(ASTBinaryMathOp)
     // PA1: Implement
+    mLHS->ASTtoCode(output, depth);
+    output << " " << Token::Values[mOp] << " ";
+    mRHS->ASTtoCode(output, depth);
 }
 
 ASTTOCODE(ASTNotExpr)
@@ -121,6 +127,7 @@ ASTTOCODE(ASTStringExpr)
 
 ASTTOCODE(ASTIdentExpr) // IdentExpr:
     // PA1: Implement
+    output << mIdent.getName();
 }
 
 ASTTOCODE(ASTArrayExpr) // "ArrayExpr: "
@@ -154,12 +161,41 @@ ASTTOCODE(ASTToCharExpr) // ToCharExpr: "
 // Declaration
 ASTTOCODE(ASTDecl) // "Decl: "
     // PA1: Implement
+    OUTS();
+    switch(mIdent.getType())
+	{
+		case Type::Void:
+			output << "void ";
+			break;
+		case Type::Int:
+			output << "int ";
+			break;
+		case Type::Char:
+			output << "char ";
+			break;
+		case Type::IntArray:
+			output << "int[" << mIdent.getArrayCount() << "]";
+			break;
+		case Type::CharArray:
+			output << "char[" << mIdent.getArrayCount() << "]";
+			break;
+		default:
+			output << "Shouldn't have gotten here...";
+			break;
+	}
+	output << mIdent.getName();
+
+    if (mExpr)
+    {
+        output << " = ";
+        mExpr->ASTtoCode(output, depth + 1);
+    }
+    output << ";" << std::endl;
 }
 
 // Statements
 ASTTOCODE(ASTCompoundStmt) // CompoundStmt:"
     // PA1: Implement
-    OUTS();
 	for (auto decl : mDecls)
 	{
 		decl->ASTtoCode(output, depth + 1);
@@ -172,6 +208,7 @@ ASTTOCODE(ASTCompoundStmt) // CompoundStmt:"
 
 ASTTOCODE(ASTReturnStmt) // "ReturnStmt:
     // PA1: Implement
+    OUTS();
 	if (!mExpr)
 	{
 		output << "return;" << std::endl;
@@ -186,6 +223,11 @@ ASTTOCODE(ASTReturnStmt) // "ReturnStmt:
 
 ASTTOCODE(ASTAssignStmt) // "AssignStmt: "
     // PA1: Implement
+    OUTS();
+    output << mIdent.getName();
+    output << " = ";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ";" << std::endl;
 }
 
 ASTTOCODE(ASTAssignArrayStmt) // "AssignArrayStmt:"
@@ -194,10 +236,30 @@ ASTTOCODE(ASTAssignArrayStmt) // "AssignArrayStmt:"
 
 ASTTOCODE(ASTIfStmt) // "IfStmt: "
     // PA1: Implement
+    OUTS();
+    output << "if (";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ") {" << std::endl;
+    mThenStmt->ASTtoCode(output, depth + 2);
+    if (mElseStmt)
+    {
+        OUTS();
+        output << "} else {" << std::endl;
+        mElseStmt->ASTtoCode(output, depth + 2);
+    }
+    OUTS();
+    output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTWhileStmt) // "WhileStmt"
     // PA1: Implement
+    OUTS();
+    output << "while (";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ") {" << std::endl;
+    mLoopStmt->ASTtoCode(output, depth + 2);
+    OUTS();
+    output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTExprStmt) // "ExprStmt"
@@ -210,10 +272,14 @@ ASTTOCODE(ASTNullStmt) // "NullStmt"
 
 ASTTOCODE(ASTBreakStmt) // "BreakStmt"
     // PA1: Implement
+    OUTS();
+    output << "break;" << std::endl;
 }
 
 ASTTOCODE(ASTContinueStmt) // "ContinueStmt"
     // PA1: Implement
+    OUTS();
+    output << "continue;" << std::endl;
 }
 
 ASTTOCODE(ASTForStmt) // "ForStmt"
