@@ -93,7 +93,7 @@ bool InstCombine::runOnFunction(Function& F)
 						changed = true;
 					}
 				}
-				// Part 2: Algebraic Simplication Constant rhs
+				// Part 2: Algebraic Simplication Constant (rhs)
 				else if (rhs) {
 					Value* replacement = nullptr;    // operand lhs or constant
 					Instruction::BinaryOps newOp = Instruction::BinaryOpsEnd;   // shl inst
@@ -141,6 +141,64 @@ bool InstCombine::runOnFunction(Function& F)
 							BI->replaceAllUsesWith(BinaryOperator::Create(
 								newOp,
 								BI->getOperand(0),
+								ConstantInt::get(BI->getType(), shiftAmt),
+								"",
+								BI
+							));
+						}
+						toErase.push_back(&I);
+						changed = true;
+					}
+				}
+
+				// Part 4: Algebraic Simplication Constant (lhs)
+				else if (lhs) {
+					Value* replacement = nullptr;    // operand rhs or constant
+					Instruction::BinaryOps newOp = Instruction::BinaryOpsEnd;   // shl inst
+					bool didCalc = true;
+					switch (BI->getOpcode()) 
+					{
+						case Instruction::Add:
+						case Instruction::Sub:
+						case Instruction::Or:
+							if (lhs->getValue() == 0) {
+								replacement = BI->getOperand(1);
+							} else {
+								didCalc = false;
+							}
+							break;
+						case Instruction::Mul:
+							if (lhs->getValue() == 0) {
+								replacement = ConstantInt::get(BI->getType(), 0);
+							} else if (lhs->getValue() == 1) {
+								replacement = BI->getOperand(1);
+							} else if (lhs->getValue().isPowerOf2()) {
+								newOp = Instruction::Shl;
+							} else {
+								didCalc = false;
+							}
+							break;
+						case Instruction::And:
+							if (lhs->getValue().isAllOnesValue()) {
+								replacement = BI->getOperand(1);
+							} else {
+								didCalc = false;
+							}
+							break;
+						default:
+							didCalc = false;
+							break;
+					}
+					if (didCalc) {
+						if (replacement) {
+							BI->replaceAllUsesWith(replacement);
+						}
+						else if (newOp != Instruction::BinaryOpsEnd) {
+							APInt shiftAmt(BI->getType()->getIntegerBitWidth(), lhs->getValue().logBase2());
+							// Create a new shift instruction
+							BI->replaceAllUsesWith(BinaryOperator::Create(
+								newOp,
+								BI->getOperand(1),
 								ConstantInt::get(BI->getType(), shiftAmt),
 								"",
 								BI
