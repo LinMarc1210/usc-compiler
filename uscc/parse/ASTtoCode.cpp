@@ -123,6 +123,7 @@ ASTTOCODE(ASTConstantExpr)
 
 ASTTOCODE(ASTStringExpr)
     // PA1: Implement
+    output << "\"" << mString->getText() << "\\n\"";
 }
 
 ASTTOCODE(ASTIdentExpr) // IdentExpr:
@@ -136,6 +137,18 @@ ASTTOCODE(ASTArrayExpr) // "ArrayExpr: "
 
 ASTTOCODE(ASTFuncExpr) // "FuncExpr: "
     // PA1: Implement
+    OUTS();
+    output << mIdent.getName() << " (";
+    int count = 0;
+    for (auto arg : mArgs)
+    {
+        arg->ASTtoCode(output, depth + 1);
+        if (count < mArgs.size() - 1) {
+            output << ", ";
+        }
+        count++;
+    }
+    output << ")" << ";" << std::endl;
 }
 
 ASTTOCODE(ASTIncExpr) // "IncExpr: "
