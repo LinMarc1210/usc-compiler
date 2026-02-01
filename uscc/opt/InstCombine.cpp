@@ -32,6 +32,57 @@ namespace uscc
 namespace opt
 {
 
+StoreInst *reAssociate(LoadInst *LI)
+{
+	Value *loadPtr = LI->getPointerOperand();
+	BasicBlock *startBB = LI->getParent();    // getParent(): get the basic block that contains the instruction
+	
+	// (1) first, search in the same basic block
+	BasicBlock::iterator it(LI);
+    while (it != startBB->begin()) {
+        --it;
+        if (StoreInst *SI = dyn_cast<StoreInst>(&*it)) {
+            if (SI->getPointerOperand() == loadPtr) {
+                return SI;
+            }
+        }
+    }
+
+	// (2) if StoreInst is on different basic block, find all predecessors of startBB
+	std::set<BasicBlock*> visited;
+	std::queue<BasicBlock*> worklist;
+	for (pred_iterator PI = pred_begin(startBB), E = pred_end(startBB); PI != E; ++PI) {
+		worklist.push(*PI);
+	}
+	while (!worklist.empty()) {
+		BasicBlock *BB = worklist.front();
+		worklist.pop();
+		if (visited.count(BB)) {
+			continue;
+		}
+		visited.insert(BB);
+
+		// first find closest StoreInst in current basic block
+		for (BasicBlock::reverse_iterator RI = BB->rbegin(), RE = BB->rend(); RI != RE; ++RI) {
+            if (StoreInst *SI = dyn_cast<StoreInst>(&*RI)) {
+                if (SI->getPointerOperand() == loadPtr) {
+                    return SI;
+                }
+            }
+        }
+
+		// if can't find, visit it's predecessors
+		for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
+			BasicBlock *predBB = *PI;
+			if (!visited.count(predBB)) {
+				worklist.push(predBB);
+			}
+		}
+	}
+	
+	return nullptr;
+}
+
 bool InstCombine::runOnFunction(Function& F)
 {
 	bool changed = false;
@@ -95,6 +146,49 @@ bool InstCombine::runOnFunction(Function& F)
 				}
 				// Part 2: Algebraic Simplication Constant (rhs)
 				else if (rhs) {
+					// Part 3: Re-association of Nested Expressions to Fold Constants
+					if (BI->getOpcode() == Instruction::Add || BI->getOpcode() == Instruction::Mul) {
+						Value* opLhs = BI->getOperand(0);
+						BinaryOperator* innerBI = nullptr;
+
+						// (1) if associate by register
+						if (BinaryOperator* tempBI = dyn_cast<BinaryOperator>(opLhs)) {
+							innerBI = tempBI;
+						}
+
+						// (2) if associate by memory (stack)
+						else if (LoadInst* LI = dyn_cast<LoadInst>(opLhs)) {
+							if (StoreInst* SI = reAssociate(LI)) {
+								innerBI = dyn_cast<BinaryOperator>(SI->getValueOperand());
+							}
+						}
+
+						// optimize by constant folding
+						if (innerBI && innerBI->getOpcode() == BI->getOpcode()) {
+							if (ConstantInt *C1 = dyn_cast<ConstantInt>(innerBI->getOperand(1))) {
+								APInt combinedVal;
+								if (BI->getOpcode() == Instruction::Add)
+									combinedVal = C1->getValue() + rhs->getValue();
+								else
+									combinedVal = C1->getValue() * rhs->getValue();
+
+								ConstantInt *C3 = ConstantInt::get(BI->getContext(), combinedVal);
+								BinaryOperator *newBI = BinaryOperator::Create(
+									BI->getOpcode(), 
+									innerBI->getOperand(0), 
+									C3, 
+									"", 
+									BI
+								);
+								BI->replaceAllUsesWith(newBI);
+								toErase.push_back(BI);
+
+								changed = true;
+								continue;
+							}
+						}
+					}
+
 					Value* replacement = nullptr;    // operand lhs or constant
 					Instruction::BinaryOps newOp = Instruction::BinaryOpsEnd;   // shl inst
 					bool didCalc = true;
