@@ -208,6 +208,30 @@ bool InstCombine::runOnFunction(Function& F)
 						changed = true;
 					}
 				}
+
+				// Part 5: Same Operand Simplification
+				else {
+					LoadInst* lhsValue = dyn_cast<LoadInst>(BI->getOperand(0));
+					LoadInst* rhsValue = dyn_cast<LoadInst>(BI->getOperand(1));
+					bool didCalc = true;
+					APInt result = APInt(BI->getType()->getIntegerBitWidth(), 0);
+					switch (BI->getOpcode()) 
+					{
+						case Instruction::Sub:
+							if (!(lhsValue && rhsValue && lhsValue->getPointerOperand() == rhsValue->getPointerOperand())) {
+								didCalc = false;
+							}
+							break;
+						default:
+							didCalc = false;
+							break;
+					}
+					if (didCalc) {
+						BI->replaceAllUsesWith(ConstantInt::get(BI->getType(), result));
+						toErase.push_back(&I);
+						changed = true;
+					}
+				}
 			}
 		}
 	}
