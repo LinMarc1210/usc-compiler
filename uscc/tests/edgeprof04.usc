@@ -1,0 +1,54 @@
+// edgeprof04.usc
+// Pattern: Nested If-Else Chain (6 levels)
+// Tests deep decision tree
+// ~22 edges, 200000000 loops
+//---------------------------------------------------------
+
+int main()
+{
+    int i = 0;
+    int result = 0;
+
+    while (i < 200000000)
+    {
+        int val = i % 64;
+        if (val < 32)
+        {
+            if (val < 16)
+            {
+                if (val < 8)
+                {
+                    if (val < 4)
+                    {
+                        if (val < 2)
+                        {
+                            result = result + 1;
+                        }
+                        else
+                        {
+                            result = result + 2;
+                        }
+                    }
+                    else
+                    {
+                        result = result + 3;
+                    }
+                }
+                else
+                {
+                    result = result + 4;
+                }
+            }
+            else
+            {
+                result = result + 5;
+            }
+        }
+        else
+        {
+            result = result + 6;
+        }
+        i = i + 1;
+    }
+    return 0;
+}
