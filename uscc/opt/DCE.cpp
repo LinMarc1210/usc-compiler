@@ -63,11 +63,60 @@ bool DeadCodeElimination::runOnFunction(llvm::Function &F)
     Liveness &lv = getAnalysisID<Liveness>(&Liveness::ID);
 
     // PA3
+
     // Step #1: get a set of dead instructions and remove them.
     // TODO: Implement
+    bool changed = true;
+    std::set<Instruction*> deadVars;
+    while (changed) {
+        changed = false;
+
+        // 1. Mark step
+        for (auto &bb : F) {
+            for (auto &inst : bb) {
+                if (lv.isDead(inst)) {
+                    deadVars.insert(&inst);
+                    if (StoreInst *SI = dyn_cast<StoreInst>(&inst)) {
+                        Value *val = SI->getValueOperand();
+                        if (Instruction *II = dyn_cast<Instruction>(&inst)) {
+                            deadVars.insert(II);
+                        }
+                    }
+                    // recursively find all dependent dead code, add to deadVars
+                    findDeadDefinitions(&inst, deadVars);
+                }
+            }
+        }
+
+        // 2. sweep step
+        if (!deadVars.empty()) {
+            for (auto &inst : deadVars) {    // llvm::Instruction *
+                if (!inst->use_empty()) {
+                    inst->replaceAllUsesWith(
+                        llvm::UndefValue::getNullValue(inst->getType())
+                    );
+                }
+                inst->eraseFromParent();  // no need to iterate early because this is C++ set
+            }
+            lv.releaseMemory();
+            lv.runOnFunction(F);
+            changed = true;
+            deadVars.clear();
+        }
+    }
+
 
     // Step #2: remove the Alloca instructions having no uses.
     // TODO: Implement
+    for (auto &bb : F) {
+        auto it = bb.begin();    // start iterator
+        while (it != bb.end()) {
+            Instruction &inst = *it++;    // next instruction (same woth *(it++) )
+            if (inst.getOpcode() == llvm::Instruction::Alloca && inst.use_empty()) {
+                inst.eraseFromParent();    // need to save next iterator first, because bb will not record ext iterator automatically.
+            }
+        }
+    }
 
     return false;
 }
