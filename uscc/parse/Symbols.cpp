@@ -91,8 +91,8 @@ llvm::Value* Identifier::readFrom(CodeContext& ctx) noexcept
 	}
 	else
 	{
-        llvm::IRBuilder<true, llvm::NoFolder> builder(ctx.mBlock);
-        retVal = builder.CreateLoad(getAddress());
+        llvm::IRBuilder<> builder(ctx.mBlock);
+        retVal = builder.CreateLoad(getAddress(), getName());
 	}
 	return retVal;
 }
@@ -106,7 +106,7 @@ void Identifier::writeTo(CodeContext& ctx, llvm::Value* value) noexcept
 	}
 	else
 	{
-        llvm::IRBuilder<true, llvm::NoFolder> builder(ctx.mBlock);
+        llvm::IRBuilder<> builder(ctx.mBlock);
         builder.CreateStore(value, getAddress());
 	}
 }
@@ -315,7 +315,7 @@ void SymbolTable::ScopeTable::emitIR(CodeContext& ctx)
 	for (auto sym : mSymbols)
 	{
 		Identifier* ident = sym.second;
-		llvm::IRBuilder<true, llvm::NoFolder> build(ctx.mBlock);
+		llvm::IRBuilder<> build(ctx.mBlock);
 
 		llvm::Value* decl = nullptr;
 
@@ -345,12 +345,12 @@ void SymbolTable::ScopeTable::emitIR(CodeContext& ctx)
 		{
             if (ident->getAddress())
             {
-                auto allocated = build.CreateAlloca(ident->llvmType());
+                auto allocated = build.CreateAlloca(ident->llvmType(), nullptr, ident->getName() + ".addr");
                 build.CreateStore(ident->getAddress(), allocated);
                 ident->setAddress(allocated);
             }
             else
-                ident->setAddress(build.CreateAlloca(ident->llvmType()));
+                ident->setAddress(build.CreateAlloca(ident->llvmType(), nullptr, ident->getName() + ".addr"));
 
 		}
 	}

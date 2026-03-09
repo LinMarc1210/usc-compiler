@@ -1,0 +1,28 @@
+********** Available Expressions Information **********
+********** Function: main, analysis iterates 9 times
+entry:
+  GEN: [0:   %mul = mul i32 %a, %b]
+  KILL: [1:   %mul7 = mul i32 %a6, %b5] [2:   %mul4 = mul i32 %a3, %b2]
+  IN:
+  OUT: [0:   %mul = mul i32 %a, %b]
+switch.end:
+  GEN: [1:   %mul7 = mul i32 %a6, %b5]
+  KILL:
+  IN:
+  OUT: [1:   %mul7 = mul i32 %a6, %b5]
+switch.case:
+  GEN: [2:   %mul4 = mul i32 %a3, %b2]
+  KILL:
+  IN: [0:   %mul = mul i32 %a, %b]
+  OUT: [0:   %mul = mul i32 %a, %b] [2:   %mul4 = mul i32 %a3, %b2]
+switch.case1:
+  GEN:
+  KILL: [0:   %mul = mul i32 %a, %b] [1:   %mul7 = mul i32 %a6, %b5] [2:   %mul4 = mul i32 %a3, %b2]
+  IN: [0:   %mul = mul i32 %a, %b]
+  OUT:
+switch.default:
+  GEN:
+  KILL: [0:   %mul = mul i32 %a, %b] [1:   %mul7 = mul i32 %a6, %b5] [2:   %mul4 = mul i32 %a3, %b2]
+  IN: [0:   %mul = mul i32 %a, %b]
+  OUT:
+

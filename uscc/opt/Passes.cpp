@@ -17,6 +17,7 @@
 #include <llvm/IR/Dominators.h>
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/PassRegistry.h>
+#include <llvm/Transforms/Scalar.h>
 
 using namespace llvm;
 
@@ -36,7 +37,7 @@ void registerOptPasses(legacy::PassManager& pm)
 	// pm.add(new LICM());
 	pm.add(new DominatorTreeWrapperPass());
 	pm.add(new LoopInfo());
-    pm.add(new InstCombine());
+    // pm.add(new InstCombine());
 }
 
 void registerEdgeProfilingPass(legacy::PassManager& pm)
@@ -58,6 +59,12 @@ void registerNaturalLoopPasses(legacy::PassManager& pm)
 	initializeLoopInfoPass(pr);
 	initializeDominatorTreeWrapperPassPass(pr);
 	pm.add(new NaturalLoops());
+}
+
+void registerAnalysisPasses(llvm::PassRegistry &Registry)
+{
+    initializeLivenessPass(Registry);
+    initializeAvailableExpressionsPass(Registry);
 }
 
 } // opt

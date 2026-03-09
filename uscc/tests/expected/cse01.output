@@ -1,0 +1,28 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [12 x i8] c"y=%d, z=%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %z.addr = alloca i32
+  %y.addr = alloca i32
+  %x.addr = alloca i32
+  %b.addr = alloca i32
+  %a.addr = alloca i32
+  store i32 10, i32* %a.addr
+  store i32 20, i32* %b.addr
+  %b = load i32* %b.addr
+  %a = load i32* %a.addr
+  %add = add i32 %a, %b
+  store i32 %add, i32* %x.addr
+  %x = load i32* %x.addr
+  %add1 = add i32 %x, 1
+  store i32 %add1, i32* %z.addr
+  store i32 %add, i32* %y.addr
+  %y = load i32* %y.addr
+  %z = load i32* %z.addr
+  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([12 x i8]* @.str, i32 0, i32 0), i32 %y, i32 %z)
+  ret i32 0
+}

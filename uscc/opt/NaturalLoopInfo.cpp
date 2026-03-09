@@ -68,138 +68,144 @@ void NaturalLoops::mapOutput(){
 
 bool NaturalLoops::runOnFunction(Function &F)
 {
-    //   PA2: Implement
-    // mDT, mHeader are struct members of NaturalLoops class
+    //PA2 Implement
+
+    //Iterate over all basic blocks in the function
+
     mDT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-    for (auto &bb : F) {
-        mHeader = &bb;
-        visited.clear();
-        dfsFindBackEdge(&bb, visited);
+
+    // Iterate over all basic blocks in the function
+
+    for (auto &BB : F) {
+      if (visited.find(&BB) == visited.end()) {
+        visited.insert(&BB);
+        mHeader = &BB;
+        // Start DFS from the current basic block
+        dfsFindBackEdge(&BB, visited);
+        BackEdge.clear();
+      }
     }
     mapOutput();
     backEdgeLoopMap.clear();
-
     return false;
+
+
 }
 
 
 void NaturalLoops::dfsFindBackEdge(BasicBlock *current, set<BasicBlock *> &visited) {
-    //   PA2: Implement
-    // find if there is back edge point to current    
-    stack<BasicBlock *> st;
-    st.push(current);
 
-    while (!st.empty()) {
-        BasicBlock *curr = st.top();
-        st.pop();
+      //PA2 Implement
 
-        if (visited.find(curr) != visited.end()) {
-            continue;
+      //Find whether there is a back edge point to the 'header'
+
+      // Mark the current block as visited
+      visited.insert(current);
+
+      // Iterate over the successors of the current block
+      for (auto succIt = succ_begin(current), succEnd = succ_end(current); succIt != succEnd; succIt++) {
+        BasicBlock *succ = *succIt;
+        // Check if the successor is in the current loop
+        for (auto iter = succ_begin(succ), succEnd = succ_end(succ);iter != succEnd; iter++)
+        {
+            BasicBlock *next = *iter;
+             if (next == mHeader && mDT->dominates(mHeader, succ) && BackEdge.find(succ) == BackEdge.end()) {
+              // Back edge found
+                //errs() << "Back Edge: " << header->getName() << " <--- " << succ->getName() << "\n";
+                //printBackEdge(mHeader, succ);
+                BackEdge.insert(succ);
+                findNaturalLoop(succ);
+
+             }
+             break;
+
         }
-        visited.insert(curr);
-        
-        // iterate through immediate successors (1-level)
-        // check if there is retreating edge
-        for (succ_iterator SI = succ_begin(curr), SE = succ_end(curr); SI != SE; ++SI) {
-            BasicBlock *succ = *SI;
-            // retreating edge points to original target (mHeader)
-            // because edge (B,A) means A is also B's successor, even if A is earlier in the CFG
-            if (succ == mHeader) {  
-                if (mDT->dominates(succ, curr)) {
-                    findNaturalLoop(curr);
-                }
-            }
-
-            // unvisited successor
-            if (visited.find(succ) == visited.end()) {
-                st.push(succ);
-            }
+        // Add unvisited successors to the stack
+        if (visited.find(succ) == visited.end()) {
+          dfsFindBackEdge(succ, visited);
+          visited.erase(succ);
         }
-    }
+
+      }
 }
 
 
 void NaturalLoops::findNaturalLoop(BasicBlock *backedge)
 {
-    //   PA2: Implement
-    vector<BasicBlock *> dominatedBlocks;
-    getDominatedBlocks(mHeader, dominatedBlocks);
-    std::pair<string, string> key = std::make_pair(mHeader->getName(), backedge->getName());
-    for (auto &bb : dominatedBlocks) {
-        // natural loop = nodes that can reach backedge without going through header + header
-        if (dfsReachable(bb, backedge, mHeader, set<BasicBlock*>())) {
-            // store the backedge into backEdgeLoopMap
-            backEdgeLoopMap[key].insert(bb->getName());
-        }
+      //PA2 Implement
+
+
+      //Find the corresponding natural loop for the back edge ('backedge block' -> 'header')
+    set<string> loopBlocks;
+    set<BasicBlock *> visitedSet;
+    vector<BasicBlock *> DomSet;
+
+    loopBlocks.insert(mHeader->getName());
+
+    getDominatedBlocks(mHeader, DomSet);
+
+    for (BasicBlock* current : DomSet){
+      if(dfsReachable(current, backedge, mHeader, visitedSet))
+        loopBlocks.insert(current->getName());
+
     }
-    // add header and backedge to the loop
-    backEdgeLoopMap[key].insert(mHeader->getName());
-    backEdgeLoopMap[key].insert(backedge->getName());
+
+    // Print the blocks in the natural loop
+    /*errs() << "Natural Loop: ";
+    for (BasicBlock *BB : loopBlocks) {
+      errs() << BB->getName() << " ";
+    }
+    errs() << "\n";*/
+    pair <string, string> edgePair;
+    edgePair.first = mHeader->getName();
+    edgePair.second = backedge->getName();
+    backEdgeLoopMap[edgePair] = loopBlocks;
+    //printNaturalLoop(loopBlocks);
+
 }
 
 
 void NaturalLoops::getDominatedBlocks(BasicBlock* block, vector<BasicBlock *>& dominatedBlocks) {
-    //   PA2: Implement
-    stack<BasicBlock*> st;
-    set<BasicBlock*> dom_visited;
-    st.push(block);
-    
-    while (!st.empty()) {
-        BasicBlock *curr = st.top();
-        st.pop();
-        
-        if (dom_visited.find(curr) != dom_visited.end()) {
-            continue;
-        }
-        dom_visited.insert(curr);
-        dominatedBlocks.push_back(curr);
-        
-        // use mDT.getNode(block) to get blocks that are immediately dominated
-        // use node->getBlock() to get the basic block of this DT node
-        DomTreeNode *node = mDT->getNode(curr);
-        if (node) {
-            for (DomTreeNode::iterator DI = node->begin(), DE = node->end(); DI != DE; ++DI) {
-                BasicBlock *dominated = (*DI)->getBlock();
-                if (dom_visited.find(dominated) == dom_visited.end()) {
-                    st.push(dominated);
-                }
-            }
-        }
+    // PA2 Implement
+
+    // Use DominatorTree to find all blocks dominated by 'block'
+    DomTreeNode* node = mDT->getNode(block);
+    if (node) {
+      for (auto child : *node) {
+          dominatedBlocks.push_back(child->getBlock());
+          getDominatedBlocks(child->getBlock(), dominatedBlocks);
+      }
     }
 }
 
 
 bool NaturalLoops::dfsReachable(BasicBlock* current, BasicBlock* target, BasicBlock* excludeBlock,set<BasicBlock*> visitedBlocks)
 {
-    //   PA2: Implement
-    if (current == excludeBlock) return false;
 
-    stack<BasicBlock*> st;
-    st.push(current);
 
-    while (!st.empty()) {
-        BasicBlock *curr = st.top();
-        st.pop();
+  //PA2 Implement
 
-        if (curr == target) { 
-            return true;
+  //Find whether 'current block' can reach 'target block' without visiting 'excludeBlock'.
+        if (current == excludeBlock) {
+            return false; // Skip visiting the excluded block
         }
-        if (visitedBlocks.find(curr) != visitedBlocks.end()) {
-            continue;
+
+        visitedBlocks.insert(current);
+
+        if (current == target) {
+            return true; // Target block is reachable
         }
-        visitedBlocks.insert(curr);
-        
-        for (succ_iterator SI = succ_begin(curr), SE = succ_end(curr); SI != SE; ++SI) {
-            BasicBlock *succ = *SI;
-            
-            // unvisited successor (excluding excludeBlock)
-            if (succ != excludeBlock && visitedBlocks.find(succ) == visitedBlocks.end()) {
-                st.push(succ);
+
+        for (auto succ = succ_begin(current), end = succ_end(current); succ != end; ++succ) {
+            BasicBlock* succBlock = *succ;
+            if (!visitedBlocks.count(succBlock)) {
+                if (dfsReachable(succBlock, target, excludeBlock, visitedBlocks)) {
+                    return true; // Target block is reachable
+                }
             }
         }
-    }
 
-    return false; // Target block is not reachable
+        return false; // Target block is not reachable
 
 }
 

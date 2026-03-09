@@ -20,3 +20,4 @@ clean:
 	$(MAKE) -C scan clean
 	$(MAKE) -C uscc clean
 	-@rm -f tests/edgeprof*_naive.bc tests/edgeprof*_opt.bc tests/edgeprof*.bc
+	-@rm -f tests/*.bc

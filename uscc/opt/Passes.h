@@ -154,5 +154,17 @@ struct NaturalLoops : public FunctionPass {
 
 void registerNaturalLoopPasses(llvm::legacy::PassManager& pm);
 
+void registerAnalysisPasses(llvm::PassRegistry &Registry);
+
 } // opt
 } // uscc
+
+namespace llvm
+{
+    void initializeLivenessPass(PassRegistry &Registry);
+    void initializeAvailableExpressionsPass(PassRegistry &Registry);
+    FunctionPass* createLivenessPass();
+    FunctionPass* createDCEPass();
+    FunctionPass* createAEPass();
+    FunctionPass* createCSEPass();
+}

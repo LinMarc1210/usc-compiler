@@ -1,9 +1,0 @@
-Program:
----Function: int main
-------CompoundStmt:
----------ReturnStmt:
-------------ConstantExpr: 0
-int main()
-{
-    return 0;
-}

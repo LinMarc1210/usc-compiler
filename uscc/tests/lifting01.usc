@@ -1,9 +1,0 @@
-// lifting01.usc
-// Part 1: Basic Statements - Simple function with return
-// Tests: ASTFunction, ASTReturnStmt toCode()
-//---------------------------------------------------------
-
-int main()
-{
-	return 0;
-}

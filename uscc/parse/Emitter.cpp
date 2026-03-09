@@ -119,6 +119,40 @@ void Emitter::enableNaturalLoop() noexcept
 	pm.run(*mContext.mModule);
 }
 
+void Emitter::registerAnalysis()
+{
+	PassRegistry *registry = PassRegistry::getPassRegistry();
+	uscc::opt::registerAnalysisPasses(*registry);
+}
+
+void Emitter::doDCE()
+{
+	legacy::PassManager pm;
+	pm.add(createDCEPass());
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::doLiveness()
+{
+	legacy::PassManager pm;
+	pm.add(createLivenessPass());
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::doAE()
+{
+	legacy::PassManager pm;
+	pm.add(createAEPass());
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::doCSE()
+{
+	legacy::PassManager pm;
+	pm.add(createCSEPass());
+	pm.run(*mContext.mModule);
+}
+
 void Emitter::print() noexcept
 {
 	legacy::PassManager pm;

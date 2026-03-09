@@ -1,0 +1,50 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [6 x i8] c"z=%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %z.addr = alloca i32
+  %y.addr = alloca i32
+  %x.addr = alloca i32
+  %c.addr = alloca i32
+  %b.addr = alloca i32
+  %a.addr = alloca i32
+  store i32 10, i32* %a.addr
+  store i32 5, i32* %b.addr
+  store i32 0, i32* %c.addr
+  store i32 0, i32* %x.addr
+  store i32 0, i32* %y.addr
+  %c = load i32* %c.addr
+  %eq = icmp eq i32 %c, 0
+  br i1 %eq, label %if.then, label %if.else
+
+if.then:                                          ; preds = %entry
+  %b1 = load i32* %b.addr
+  %a2 = load i32* %a.addr
+  %sub3 = sub i32 %a2, %b1
+  store i32 %sub3, i32* %x.addr
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %if.else
+  %b4 = load i32* %b.addr
+  %a5 = load i32* %a.addr
+  %sub6 = sub i32 %a5, %b4
+  %x = load i32* %x.addr
+  %add = add i32 %x, %sub6
+  store i32 %add, i32* %z.addr
+  %z = load i32* %z.addr
+  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([6 x i8]* @.str, i32 0, i32 0), i32 %z)
+  ret i32 0
+
+if.else:                                          ; preds = %entry
+  %b = load i32* %b.addr
+  %a = load i32* %a.addr
+  %sub = sub i32 %a, %b
+  store i32 %sub, i32* %y.addr
+  %y = load i32* %y.addr
+  store i32 %y, i32* %x.addr
+  br label %if.end
+}

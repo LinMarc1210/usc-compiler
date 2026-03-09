@@ -46,48 +46,81 @@ bool EdgeProfiling::runOnFunction(Function& F)
     LLVMContext& ctx = F.getContext();
     EdgeProfileData data;
 
-    //   PA2: Implement
-
-    // assign deterministic basic block IDs, enumerate all CFG edges.
+    // =========================================================
+    // Step 1: Collect all edges and assign block IDs (provided)
+    // =========================================================
     collectEdgesAndAssignBlockIds(F, data);
-    // create global last_src and edge_counts
+
+    if (data.allEdges.empty())
+        return false;
+
+    // =========================================================
+    // Step 2: Create globals for logsrc/logdest (provided)
+    // =========================================================
     createEdgeProfilingGlobals(F, data);
 
-    // instrument each basic block with logsrc/logdest calls
-    IntegerType *i32Ty = IntegerType::getInt32Ty(ctx);
-    IntegerType *i64Ty = IntegerType::getInt64Ty(ctx);
-    ConstantInt* numBlocksConst = ConstantInt::get(IntegerType::getInt64Ty(ctx), data.numBlocks);
-    for (auto &bb : F) {
-        unsigned id = data.blockId[&bb];
-        IRBuilder<> builder(&bb);
-        // logdest step 1: insertion point
-        builder.SetInsertPoint(bb.getFirstNonPHI());
+    // =========================================================
+    // Step 3: Insert logsrc/logdest in EVERY basic block
+    //
+    // For the naive approach, every block gets both:
+    //   - logdest at entry (after PHI nodes): load last_src,
+    //     compute matrix index, increment counter
+    //   - logsrc before terminator: store this block's ID
+    //
+    // TODO: Student implements this section
+    // =========================================================
+    for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
+    {
+        BasicBlock* block = &*BB;
+        unsigned destId = data.blockId[block];
 
-        Value *lastSrc = builder.CreateLoad(data.lastSrcGlobal);   // member variable
-        Value *lastSrc64 = builder.CreateZExt(lastSrc, i64Ty);   // zero to extend
+        // --- logdest: insert after PHI nodes ---
+        Instruction* insertPt = block->getFirstNonPHI();
+        IRBuilder<> destBuilder(insertPt);
 
-        // logdest step 2: index = last src * numBlocks + id
-        Value *idConst64 = ConstantInt::get(i64Ty, id);
-        Value *mul = builder.CreateMul(lastSrc64, numBlocksConst);
-        Value *index = builder.CreateAdd(mul, idConst64);
+        // Load last_src
+        Value* srcIdVal = destBuilder.CreateLoad(
+            data.lastSrcGlobal, "last.src");
 
-        // logdest step 3: obtain a pointer to the corresponding counter entry in edge counts by GEP
-        Value *gepIdx[] = {ConstantInt::get(i64Ty, 0), index};
-        Value *counterPtr = builder.CreateGEP(data.edgeMatrix, gepIdx);
+        // Compute index = src_id * numBlocks + dest_id
+        Value* srcIdExt = destBuilder.CreateZExt(
+            srcIdVal, IntegerType::getInt64Ty(ctx), "src.ext");
+        Value* index = destBuilder.CreateAdd(
+            destBuilder.CreateMul(
+                srcIdExt,
+                ConstantInt::get(IntegerType::getInt64Ty(ctx), data.numBlocks),
+                "mul.idx"),
+            ConstantInt::get(IntegerType::getInt64Ty(ctx), destId),
+            "edge.idx");
 
-        // logdest step 4: create IR to load the counter value, add 1, and store the incremented value back.
-        Value *count = builder.CreateLoad(counterPtr);
-        Value *newCount = builder.CreateAdd(count, ConstantInt::get(i64Ty, 1));
-        builder.CreateStore(newCount, counterPtr);
+        // GEP into edge matrix
+        std::vector<Value*> gepIndices;
+        gepIndices.push_back(ConstantInt::get(IntegerType::getInt64Ty(ctx), 0));
+        gepIndices.push_back(index);
+        Value* counterPtr = destBuilder.CreateGEP(
+            data.edgeMatrix, gepIndices, "counter.ptr");
 
-        // logsrc step 1: 
-        builder.SetInsertPoint(bb.getTerminator());
-        ConstantInt *idConst32 = ConstantInt::get(i32Ty, id);   // not null if type is consistent
-        builder.CreateStore(idConst32, data.lastSrcGlobal);
+        // Increment counter
+        Value* count = destBuilder.CreateLoad(counterPtr, "count");
+        Value* incCount = destBuilder.CreateAdd(
+            count,
+            ConstantInt::get(IntegerType::getInt64Ty(ctx), 1),
+            "count.inc");
+        destBuilder.CreateStore(incCount, counterPtr);
+
+        // --- logsrc: insert before terminator ---
+        TerminatorInst* term = block->getTerminator();
+        IRBuilder<> srcBuilder(term);
+        srcBuilder.CreateStore(
+            ConstantInt::get(IntegerType::getInt32Ty(ctx), destId),
+            data.lastSrcGlobal);
     }
 
-    // printing
+    // =========================================================
+    // Step 4: Insert profiling output (provided)
+    // =========================================================
     insertEdgeProfilePrinting(F, data, "naive");
+
     return true;
 }
 
