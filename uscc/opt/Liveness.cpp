@@ -74,13 +74,74 @@ bool Liveness::runOnFunction(Function &F)
 
     // PA3: Implement
     // Step #1: identify program variables.
+    for (auto &bb : F) {
+        for (auto &inst : bb) {
+            if (inst.getOpcode() == llvm::Instruction::Alloca) {
+                if (inst.hasName()) {
+                    namedVars.insert(inst.getName());
+                }
+            }
+        }
+    }
 
     // Step #2: calculate DEF/USE set for each basic block
+    std::map<BasicBlock *, std::set<StringRef>> bb2Use, bb2Def;
+    for (auto &bb : F) {
+        set<StringRef> USE = {};
+        set<StringRef> DEF = {};
+        for (auto it = bb.rbegin() ; it != bb.rend() ; it++) {
+            // LoadInst
+            if (LoadInst* LI = dyn_cast_or_null<LoadInst>(&*it)) {
+                if (namedVars.count(LI->getPointerOperand()->getName())) {  // found
+                    USE.insert(LI->getPointerOperand()->getName());
+                    DEF.erase(LI->getPointerOperand()->getName());
+                }
+            }
+            // StoreInst
+            else if (StoreInst* SI = dyn_cast_or_null<StoreInst>(&*it)) {
+                if (namedVars.count(SI->getPointerOperand()->getName())) {  // found
+                    USE.erase(SI->getPointerOperand()->getName());
+                    DEF.insert(SI->getPointerOperand()->getName());
+                }
+            }
+        }
+        
+        // save to bb2Use, bb2Def
+        bb2Use[&bb] = USE;
+        bb2Def[&bb] = DEF;
+    }
 
     // Step #3: compute post order traversal.
+    set<BasicBlock *> visited;
+    deque<BasicBlock *> postorder;
+    computePostOrder(&(F.front()), visited, postorder);
 
     // Step #4: iterate over control flow graph of the input function until the fixed point.
     unsigned cnt = 0;
+    bool changed = true;
+    for (auto &bb : F) {
+        bb2In[&bb] = {};
+    }
+    while (changed) {
+        changed = false;
+        for (auto &bb : postorder) {    // BasicBlock *
+            set<StringRef> old_IN = bb2In[bb];
+            // for all direct successor basic block Y
+            // OUT[X] = Union(IN[Y])
+            for (auto it = succ_begin(bb), end = succ_end(bb) ; it != end ; it++) {
+                bb2Out[bb] += bb2In[*it];
+            }
+            // IN[X] = USE[X] + (OUT[X] - DEF[X])
+            bb2In[bb] = bb2Use[bb] + (bb2Out[bb] - bb2Def[bb]);
+
+            // fixed_point check
+            if (old_IN != bb2In[bb]) {
+                changed = true;
+            }
+        }
+        // iteration counter
+        cnt++;
+    }
 
     // Step #5: output IN/OUT set for each basic block.
     if (enableLiveness)
@@ -113,6 +174,31 @@ bool Liveness::isDead(llvm::Instruction &inst)
         return true;
 
     // PA3: Implement
+    StoreInst *is_SI = dyn_cast<StoreInst>(&inst);
+    if (!is_SI) 
+        return false;    // non Store inst
+    StringRef varName = is_SI->getPointerOperand()->getName();
+    if (!namedVars.count(varName)) 
+        return false;    // other store
+
+    
     // TODO: Implement
+    set<StringRef> LiveWithinBB = bb2Out[bb];
+    for (auto it = bb->rbegin() ; it != bb->rend() ; it++) {
+        Instruction *curr = &*it;    // current instruction
+        if (curr == &inst) {         // target instruction
+            if (!LiveWithinBB.count(varName))    // not found, so it is dead, return true
+                return true;
+            else return false;
+        }
+        // Update LiveWithinBB by LoadInst, StoreInst
+        if (LoadInst* LI = dyn_cast_or_null<LoadInst>(&*it)) {
+            LiveWithinBB.insert(LI->getPointerOperand()->getName());
+        }
+        else if (StoreInst* SI = dyn_cast_or_null<StoreInst>(&*it)) {
+            LiveWithinBB.erase(SI->getPointerOperand()->getName());
+        }
+    }
+    
     return false;
 }
