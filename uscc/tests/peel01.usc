@@ -1,0 +1,25 @@
+// peel01.usc
+//
+// Byounguk: Test case for peeling + lifting + optimization
+//
+// If statement - peelable while
+
+int main()
+{
+    int x = 9;
+    int y = 20;
+    int z;
+    if (x < y) {
+        printf("x < y\n");
+    }
+    z = x + 100;
+    printf("start!\n");
+    while (x < 10)
+    {
+        x = z + 4;
+        z = y + 3;
+        printf("y = %d\n", y);
+        ++x;
+    }
+    return 0;
+}

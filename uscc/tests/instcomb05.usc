@@ -1,0 +1,21 @@
+// instcomb05.usc
+// Part 2: Identity - Addition/Subtraction with zero
+// Tests: add x, 0 -> x; sub x, 0 -> x
+// Expected: No add/sub with 0 in optimized IR
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	return x + 0;
+}
+
+int bar(int x)
+{
+	return x - 0;
+}
+
+int main()
+{
+	printf("%d %d\n", foo(42), bar(17));
+	return 0;
+}

@@ -1,0 +1,19 @@
+// lifting10.usc
+// Part 3: For Loop - For loop with break
+// Tests: ASTForStmt with ASTBreakStmt toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int sum = 0;
+	int i;
+	for (i = 0; i < 10; ++i)
+	{
+		if (i == 5)
+		{
+			break;
+		}
+		sum = sum + i;
+	}
+	return sum;
+}

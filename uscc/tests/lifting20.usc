@@ -1,0 +1,44 @@
+// lifting20.usc
+// Part 6: Comprehensive - Combined for, do-while, switch, break, continue
+// Tests: All extended USC semantics toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int sum = 0;
+	int i;
+	int mode = 1;
+
+	for (i = 0; i < 10; ++i)
+	{
+		if (i == 8)
+		{
+			break;
+		}
+		if (i == 3)
+		{
+			continue;
+		}
+		sum = sum + i;
+	}
+
+	do
+	{
+		sum = sum + 1;
+	}
+	while (sum < 30);
+
+	switch (mode)
+	{
+		case 0:
+			sum = 0;
+			break;
+		case 1:
+			sum = sum + 100;
+			break;
+		default:
+			sum = sum + 50;
+	}
+
+	return sum;
+}
