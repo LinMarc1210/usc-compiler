@@ -173,6 +173,7 @@ bool AvailableExpressions::runOnFunction(Function &F) {
     // Step 4: Worklist algorithm 
     // PA3: Implement
 
+    unsigned iterationCount = 0;
     if (enableAE) {
         dumpAvailableExpressions(F, iterationCount);
     }
