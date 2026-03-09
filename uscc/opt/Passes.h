@@ -28,6 +28,10 @@
 #include <llvm/IR/Dominators.h>
 #pragma clang diagnostic pop
 
+#include <set>
+#include <vector>
+#include <string>
+
 using llvm::FunctionPass;
 using llvm::LoopPass;
 
@@ -103,6 +107,52 @@ struct InstCombine : public FunctionPass {
   virtual bool runOnFunction(llvm::Function &F) override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &Info) const override;
 };
-	
+
+// Declares the Naive Edge Profiling Pass
+// Instruments ALL edges with counters
+struct EdgeProfiling : public FunctionPass
+{
+	static char ID;
+	EdgeProfiling() : FunctionPass(ID) {}
+
+	virtual bool runOnFunction(llvm::Function& F) override;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+};
+
+// Declares the Optimized Edge Profiling Pass (MST + extrapolation)
+// Uses Knuth's optimal counter placement algorithm
+struct EdgeProfilingOpt : public FunctionPass
+{
+	static char ID;
+	EdgeProfilingOpt() : FunctionPass(ID) {}
+
+	virtual bool runOnFunction(llvm::Function& F) override;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+};
+
+// Helper functions for registering the edge profiling passes
+void registerEdgeProfilingPass(llvm::legacy::PassManager& pm);
+void registerEdgeProfilingOptPass(llvm::legacy::PassManager& pm);
+
+// PA2: Natural Loop Detection Pass
+struct NaturalLoops : public FunctionPass {
+	static char ID;
+	NaturalLoops() : FunctionPass(ID) {}
+	virtual bool runOnFunction(llvm::Function &F) override;
+	void dfsFindBackEdge(llvm::BasicBlock *current, std::set<llvm::BasicBlock *> &visited);
+	void findNaturalLoop(llvm::BasicBlock *tail);
+	bool dfsReachable(llvm::BasicBlock* current, llvm::BasicBlock* target,
+	                  llvm::BasicBlock* excludeBlock, std::set<llvm::BasicBlock*> visitedBlocks);
+	void getDominatedBlocks(llvm::BasicBlock* block, std::vector<llvm::BasicBlock *>& dominatedBlocks);
+	virtual void getAnalysisUsage(llvm::AnalysisUsage &Info) const override;
+	void printBackEdge(std::string head, std::string tail);
+	void printNaturalLoop(std::set<std::string>& naturalLoop);
+	void mapOutput();
+	llvm::BasicBlock *mHeader;
+	llvm::DominatorTree* mDT;
+};
+
+void registerNaturalLoopPasses(llvm::legacy::PassManager& pm);
+
 } // opt
 } // uscc

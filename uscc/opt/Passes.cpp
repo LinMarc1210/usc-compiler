@@ -39,5 +39,26 @@ void registerOptPasses(legacy::PassManager& pm)
     pm.add(new InstCombine());
 }
 
+void registerEdgeProfilingPass(legacy::PassManager& pm)
+{
+	pm.add(new EdgeProfiling());
+}
+
+void registerEdgeProfilingOptPass(legacy::PassManager& pm)
+{
+	PassRegistry& pr = *PassRegistry::getPassRegistry();
+	initializeLoopInfoPass(pr);
+	initializeDominatorTreeWrapperPassPass(pr);
+	pm.add(new EdgeProfilingOpt());
+}
+
+void registerNaturalLoopPasses(legacy::PassManager& pm)
+{
+	PassRegistry& pr = *PassRegistry::getPassRegistry();
+	initializeLoopInfoPass(pr);
+	initializeDominatorTreeWrapperPassPass(pr);
+	pm.add(new NaturalLoops());
+}
+
 } // opt
 } // uscc

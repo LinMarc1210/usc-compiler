@@ -91,6 +91,34 @@ void Emitter::optimize() noexcept
 	pm.run(*mContext.mModule);
 }
 
+void Emitter::edgeProfile() noexcept
+{
+	legacy::PassManager pm;
+	uscc::opt::registerEdgeProfilingPass(pm);
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::edgeProfileNaive() noexcept
+{
+	legacy::PassManager pm;
+	uscc::opt::registerEdgeProfilingPass(pm);
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::edgeProfileOpt() noexcept
+{
+	legacy::PassManager pm;
+	uscc::opt::registerEdgeProfilingOptPass(pm);
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::enableNaturalLoop() noexcept
+{
+	legacy::PassManager pm;
+	uscc::opt::registerNaturalLoopPasses(pm);
+	pm.run(*mContext.mModule);
+}
+
 void Emitter::print() noexcept
 {
 	legacy::PassManager pm;

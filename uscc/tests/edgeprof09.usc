@@ -1,0 +1,40 @@
+// edgeprof09.usc
+// Pattern: Loop with Continue Conditions (5 continue paths)
+// Tests multiple skip paths in a loop
+// ~20 edges, 200000000 iterations
+//---------------------------------------------------------
+
+int main()
+{
+    int i = 0;
+    int sum = 0;
+
+    while (i < 200000000)
+    {
+        i = i + 1;
+
+        if (i % 2 == 0)
+        {
+            continue;
+        }
+        if (i % 3 == 0)
+        {
+            continue;
+        }
+        if (i % 5 == 0)
+        {
+            continue;
+        }
+        if (i % 7 == 0)
+        {
+            continue;
+        }
+        if (i % 11 == 0)
+        {
+            continue;
+        }
+
+        sum = sum + i;
+    }
+    return 0;
+}

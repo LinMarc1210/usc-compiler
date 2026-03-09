@@ -23,7 +23,6 @@
 #include <llvm/IR/CFG.h>
 #include <set>
 #include <queue>
-#include <vector>
 
 using namespace llvm;
 
@@ -32,308 +31,374 @@ namespace uscc
 namespace opt
 {
 
-StoreInst *reAssociate(LoadInst *LI)
-{
-	Value *loadPtr = LI->getPointerOperand();
-	BasicBlock *startBB = LI->getParent();    // getParent(): get the basic block that contains the instruction
-	
-	// (1) first, search in the same basic block
-	BasicBlock::iterator it(LI);
-    while (it != startBB->begin()) {
-        --it;
-        if (StoreInst *SI = dyn_cast<StoreInst>(&*it)) {
-            if (SI->getPointerOperand() == loadPtr) {
-                return SI;
-            }
-        }
-    }
-
-	// (2) if StoreInst is on different basic block, find all predecessors of startBB
-	std::set<BasicBlock*> visited;
-	std::queue<BasicBlock*> worklist;
-	for (pred_iterator PI = pred_begin(startBB), E = pred_end(startBB); PI != E; ++PI) {
-		worklist.push(*PI);
-	}
-	while (!worklist.empty()) {
-		BasicBlock *BB = worklist.front();
-		worklist.pop();
-		if (visited.count(BB)) {
-			continue;
-		}
-		visited.insert(BB);
-
-		// first find closest StoreInst in current basic block
-		for (BasicBlock::reverse_iterator RI = BB->rbegin(), RE = BB->rend(); RI != RE; ++RI) {
-            if (StoreInst *SI = dyn_cast<StoreInst>(&*RI)) {
-                if (SI->getPointerOperand() == loadPtr) {
-                    return SI;
-                }
-            }
-        }
-
-		// if can't find, visit it's predecessors
-		for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
-			BasicBlock *predBB = *PI;
-			if (!visited.count(predBB)) {
-				worklist.push(predBB);
-			}
-		}
-	}
-	
-	return nullptr;
-}
-
 bool InstCombine::runOnFunction(Function& F)
 {
 	bool changed = false;
-	std::vector<Instruction*> toErase;
 
-    // PA1: Implement Part 1 ~ 5 of instcombine optimization
-	for (BasicBlock& BB : F) {  // Iterate basic block in function
-		for (Instruction& I : BB) {  // Iterate instruction in the basic block
-			BinaryOperator *BI = dyn_cast<BinaryOperator>(&I);
-			if (BI) {   // if not BinaryOpt, return nullptr to BI
-				ConstantInt *lhs = dyn_cast<ConstantInt>(BI->getOperand(0));  // if not ConstantInt, return nullptr to lhs
-				ConstantInt *rhs = dyn_cast<ConstantInt>(BI->getOperand(1));  // if not ConstantInt, return nullptr to rhs
+	// We collect instructions to remove in a set, then delete them
+	// after iteration to avoid invalidating iterators
+	std::set<Instruction*> removeSet;
 
-				// Part 1: Local Constant folding
-				if (lhs && rhs) {
-					APInt result = lhs->getValue();
+	// Iterate through all basic blocks in the function
+	for (Function::iterator blockIter = F.begin(); blockIter != F.end(); ++blockIter)
+	{
+		// Iterate through all instructions in each basic block
+		for (BasicBlock::iterator instrIter = blockIter->begin();
+			 instrIter != blockIter->end(); ++instrIter)
+		{
+			//=============================================================
+			// PART 1: Binary Operator Optimizations
+			//=============================================================
+			if (BinaryOperator* binOp = dyn_cast<BinaryOperator>(instrIter))
+			{
+				Value* lhs = binOp->getOperand(0);
+				Value* rhs = binOp->getOperand(1);
+				ConstantInt* lhsConst = dyn_cast<ConstantInt>(lhs);
+				ConstantInt* rhsConst = dyn_cast<ConstantInt>(rhs);
+
+				Value* replacement = nullptr;
+				unsigned opcode = binOp->getOpcode();
+
+				//=========================================================
+				// 1.1: Constant Folding
+				// If both operands are constants, compute the result at
+				// compile time instead of runtime.
+				// Example: add 3, 5 -> 8
+				//=========================================================
+				if (lhsConst && rhsConst)
+				{
+					APInt lhsVal = lhsConst->getValue();
+					APInt rhsVal = rhsConst->getValue();
+					APInt result;
 					bool didCalc = true;
-					switch (BI->getOpcode()) 
+
+					switch (opcode)
 					{
 						case Instruction::Add:
-							result += rhs->getValue();
+							result = lhsVal + rhsVal;
 							break;
 						case Instruction::Sub:
-							result -= rhs->getValue();
+							result = lhsVal - rhsVal;
 							break;
 						case Instruction::Mul:
-							result *= rhs->getValue();
+							result = lhsVal * rhsVal;
 							break;
 						case Instruction::SDiv:
-							if (rhs->getValue() == 0) {
+							// Avoid division by zero
+							if (rhsVal != 0)
+								result = lhsVal.sdiv(rhsVal);
+							else
 								didCalc = false;
-							} else {
-								result = result.sdiv(rhs->getValue());
-							}
 							break;
 						case Instruction::SRem:
-							if (rhs->getValue() == 0) {
+							// Avoid division by zero
+							if (rhsVal != 0)
+								result = lhsVal.srem(rhsVal);
+							else
 								didCalc = false;
-							} else {
-								result = result.srem(rhs->getValue());
-							}
 							break;
 						case Instruction::And:
-							result &= rhs->getValue();
+							result = lhsVal & rhsVal;
 							break;
 						case Instruction::Or:
-							result |= rhs->getValue();
+							result = lhsVal | rhsVal;
 							break;
 						default:
 							didCalc = false;
 							break;
 					}
-					
-					if (didCalc) {
-						// Replace the instruction with the constant result
-						BI->replaceAllUsesWith(ConstantInt::get(BI->getType(), result));
-						// Do not erase the instruction when iterating over the basic block
-						toErase.push_back(&I);
-						changed = true;
+
+					if (didCalc)
+					{
+						replacement = ConstantInt::get(binOp->getContext(), result);
 					}
 				}
-				// Part 2: Algebraic Simplication Constant (rhs)
-				else if (rhs) {
-					// Part 3: Re-association of Nested Expressions to Fold Constants
-					if (BI->getOpcode() == Instruction::Add || BI->getOpcode() == Instruction::Mul) {
-						Value* opLhs = BI->getOperand(0);
-						BinaryOperator* innerBI = nullptr;
+				//=========================================================
+				// 1.2: Identity and Zero Patterns (RHS is constant)
+				// Simplify operations where one operand is a special value
+				//=========================================================
+				else if (rhsConst)
+				{
+					APInt rhsVal = rhsConst->getValue();
 
-						// (1) if associate by register
-						if (BinaryOperator* tempBI = dyn_cast<BinaryOperator>(opLhs)) {
-							innerBI = tempBI;
-						}
-
-						// (2) if associate by memory (stack)
-						else if (LoadInst* LI = dyn_cast<LoadInst>(opLhs)) {
-							if (StoreInst* SI = reAssociate(LI)) {
-								innerBI = dyn_cast<BinaryOperator>(SI->getValueOperand());
-							}
-						}
-
-						// optimize by constant folding
-						if (innerBI && innerBI->getOpcode() == BI->getOpcode()) {
-							if (ConstantInt *C1 = dyn_cast<ConstantInt>(innerBI->getOperand(1))) {
-								APInt combinedVal;
-								if (BI->getOpcode() == Instruction::Add)
-									combinedVal = C1->getValue() + rhs->getValue();
-								else
-									combinedVal = C1->getValue() * rhs->getValue();
-
-								ConstantInt *C3 = ConstantInt::get(BI->getContext(), combinedVal);
-								BinaryOperator *newBI = BinaryOperator::Create(
-									BI->getOpcode(), 
-									innerBI->getOperand(0), 
-									C3, 
-									"", 
-									BI
-								);
-								BI->replaceAllUsesWith(newBI);
-								toErase.push_back(BI);
-
-								changed = true;
-								continue;
-							}
-						}
-					}
-
-					Value* replacement = nullptr;    // operand lhs or constant
-					Instruction::BinaryOps newOp = Instruction::BinaryOpsEnd;   // shl inst
-					bool didCalc = true;
-					switch (BI->getOpcode()) 
+					switch (opcode)
 					{
 						case Instruction::Add:
 						case Instruction::Sub:
 						case Instruction::Or:
-							if (rhs->getValue() == 0) {
-								replacement = BI->getOperand(0);
-							} else {
-								didCalc = false;
-							}
+							// Identity: x + 0 = x, x - 0 = x, x | 0 = x
+							// LLVM 3.5.0 Compatibility: APInt doesn't have isZero()
+							// Use comparison: rhsVal == 0
+							if (rhsVal == 0)
+								replacement = lhs;
 							break;
+
 						case Instruction::Mul:
-							if (rhs->getValue() == 0) {
-								replacement = ConstantInt::get(BI->getType(), 0);
-							} else if (rhs->getValue() == 1) {
-								replacement = BI->getOperand(0);
-							} else if (rhs->getValue().isPowerOf2()) {
-								newOp = Instruction::Shl;
-							} else {
-								didCalc = false;
+							// Zero absorbing: x * 0 = 0
+							if (rhsVal == 0)
+								replacement = rhsConst;
+							// Identity: x * 1 = x
+							// LLVM 3.5.0 Compatibility: APInt doesn't have isOne()
+							// Use comparison: rhsVal == 1
+							else if (rhsVal == 1)
+								replacement = lhs;
+							// Strength Reduction: mul x, 2^k → shl x, k
+							// Multiplication by power of 2 can be replaced with left shift
+							// Example: x * 8 → x << 3 (since 8 = 2^3)
+							// This is faster on most architectures
+							else if (rhsVal.isPowerOf2())
+							{
+								unsigned shiftAmt = rhsVal.logBase2();
+								Instruction* newInst = BinaryOperator::Create(
+									Instruction::Shl, lhs,
+									ConstantInt::get(rhsConst->getType(), shiftAmt),
+									"", binOp);
+								replacement = newInst;
 							}
 							break;
+
+						// case Instruction::UDiv:
+						// 	// Strength Reduction: udiv x, 2^k → lshr x, k
+						// 	// Unsigned division by power of 2 = logical right shift --> not possible in USCC
+						// 	// Example: x / 8 -> x >> 3 (for unsigned x)
+						// 	// Note: This only works for unsigned division!
+						// 	// Signed division requires special handling due to rounding
+
 						case Instruction::And:
-							if (rhs->getValue().isAllOnesValue()) {
-								replacement = BI->getOperand(0);
-							} else {
-								didCalc = false;
-							}
+							// Identity: x & -1 = x (AND with all ones returns x)
+							// -1 in two's complement has all bits set to 1
+							// LLVM 3.5.0 Compatibility: Use isAllOnesValue() instead of isAllOnes()
+							// isAllOnesValue() returns true if all bits are 1
+							// For 8-bit: 0xFF (255 or -1)
+							// For 32-bit: 0xFFFFFFFF (4294967295 or -1)
+							if (rhsVal.isAllOnesValue())
+								replacement = lhs;
 							break;
+
 						default:
-							didCalc = false;
 							break;
 					}
-					if (didCalc) {
-						if (replacement) {
-							BI->replaceAllUsesWith(replacement);
+
+					//=====================================================
+					// 1.3: Reassociation with Constants
+					// Fold nested operations with constants into single op
+					// Also handles USC's store/load pattern by tracking
+					// through load instructions to find the source operation
+					//=====================================================
+
+					// Helper: Get the source value if lhs is a load instruction
+					// Searches current block and predecessor blocks for the store
+					Value* innerValue = lhs;
+					if (LoadInst* loadInst = dyn_cast<LoadInst>(lhs))
+					{
+						Value* loadPtr = loadInst->getPointerOperand();
+						bool found = false;
+
+						// First, scan backwards in the current basic block
+						BasicBlock::iterator it(loadInst);
+						while (it != loadInst->getParent()->begin())
+						{
+							--it;
+							if (StoreInst* storeInst = dyn_cast<StoreInst>(it))
+							{
+								if (storeInst->getPointerOperand() == loadPtr)
+								{
+									innerValue = storeInst->getValueOperand();
+									found = true;
+									break;
+								}
+							}
 						}
-						else if (newOp != Instruction::BinaryOpsEnd) {
-							APInt shiftAmt(BI->getType()->getIntegerBitWidth(), rhs->getValue().logBase2());
-							// Create a new shift instruction
-							BI->replaceAllUsesWith(BinaryOperator::Create(
-								newOp,
-								BI->getOperand(0),
-								ConstantInt::get(BI->getType(), shiftAmt),
-								"",
-								BI
-							));
+
+						// If not found in current block, search predecessor blocks
+						if (!found)
+						{
+							std::set<BasicBlock*> visited;
+							std::queue<BasicBlock*> worklist;
+
+							// Add all predecessors of current block to worklist
+							BasicBlock* currentBB = loadInst->getParent();
+							for (pred_iterator PI = pred_begin(currentBB),
+								 PE = pred_end(currentBB); PI != PE; ++PI)
+							{
+								worklist.push(*PI);
+							}
+
+							while (!worklist.empty() && !found)
+							{
+								BasicBlock* BB = worklist.front();
+								worklist.pop();
+
+								// Skip if already visited (handles loops)
+								if (visited.count(BB))
+									continue;
+								visited.insert(BB);
+
+								// Scan this block backwards (from end to begin)
+								for (BasicBlock::iterator BI = BB->end(),
+									 BE = BB->begin(); BI != BE; )
+								{
+									--BI;
+									if (StoreInst* storeInst = dyn_cast<StoreInst>(BI))
+									{
+										if (storeInst->getPointerOperand() == loadPtr)
+										{
+											innerValue = storeInst->getValueOperand();
+											found = true;
+											break;
+										}
+									}
+								}
+
+								// If not found, add predecessors to worklist
+								if (!found)
+								{
+									for (pred_iterator PI = pred_begin(BB),
+										 PE = pred_end(BB); PI != PE; ++PI)
+									{
+										if (!visited.count(*PI))
+											worklist.push(*PI);
+									}
+								}
+							}
 						}
-						toErase.push_back(&I);
-						changed = true;
+					}
+
+					// Reduces instruction count and enables further optimizations
+					if (!replacement && opcode == Instruction::Add)
+					{
+						if (BinaryOperator* innerOp = dyn_cast<BinaryOperator>(innerValue))
+						{
+							if (innerOp->getOpcode() == Instruction::Add)
+							{
+								if (ConstantInt* C1 = dyn_cast<ConstantInt>(innerOp->getOperand(1)))
+								{
+									Value* x = innerOp->getOperand(0);
+									APInt newConst = C1->getValue() + rhsVal;
+									Instruction* newInst = BinaryOperator::Create(
+										Instruction::Add, x,
+										ConstantInt::get(rhsConst->getContext(), newConst),
+										"", binOp);
+									replacement = newInst;
+								}
+							}
+						}
+					}
+
+					if (!replacement && opcode == Instruction::Mul)
+					{
+						if (BinaryOperator* innerOp = dyn_cast<BinaryOperator>(innerValue))
+						{
+							if (innerOp->getOpcode() == Instruction::Mul)
+							{
+								if (ConstantInt* C1 = dyn_cast<ConstantInt>(innerOp->getOperand(1)))
+								{
+									Value* x = innerOp->getOperand(0);
+									APInt newConst = C1->getValue() * rhsVal;
+									Instruction* newInst = BinaryOperator::Create(
+										Instruction::Mul, x,
+										ConstantInt::get(rhsConst->getContext(), newConst),
+										"", binOp);
+									replacement = newInst;
+								}
+							}
+						}
 					}
 				}
+				//=========================================================
+				// 1.4: Identity Patterns (LHS is constant)
+				// Handle commutative cases where constant is on the left
+				//=========================================================
+				else if (lhsConst)
+				{
+					APInt lhsVal = lhsConst->getValue();
 
-				// Part 4: Algebraic Simplication Constant (lhs)
-				else if (lhs) {
-					Value* replacement = nullptr;    // operand rhs or constant
-					Instruction::BinaryOps newOp = Instruction::BinaryOpsEnd;   // shl inst
-					bool didCalc = true;
-					switch (BI->getOpcode()) 
+					switch (opcode)
 					{
 						case Instruction::Add:
-						case Instruction::Sub:
 						case Instruction::Or:
-							if (lhs->getValue() == 0) {
-								replacement = BI->getOperand(1);
-							} else {
-								didCalc = false;
-							}
+							// Identity: 0 + x = x, 0 | x = x
+							// These are commutative, so same as x + 0
+							if (lhsVal == 0)
+								replacement = rhs;
 							break;
+
 						case Instruction::Mul:
-							if (lhs->getValue() == 0) {
-								replacement = ConstantInt::get(BI->getType(), 0);
-							} else if (lhs->getValue() == 1) {
-								replacement = BI->getOperand(1);
-							} else if (lhs->getValue().isPowerOf2()) {
-								newOp = Instruction::Shl;
-							} else {
-								didCalc = false;
-							}
+							// Zero absorbing: 0 * x = 0
+							if (lhsVal == 0)
+								replacement = lhsConst;
+							// Identity: 1 * x = x
+							else if (lhsVal == 1)
+								replacement = rhs;
 							break;
+
 						case Instruction::And:
-							if (lhs->getValue().isAllOnesValue()) {
-								replacement = BI->getOperand(1);
-							} else {
-								didCalc = false;
-							}
+							// Identity: -1 & x = x (all ones AND x = x)
+							if (lhsVal.isAllOnesValue())
+								replacement = rhs;
 							break;
+
 						default:
-							didCalc = false;
 							break;
-					}
-					if (didCalc) {
-						if (replacement) {
-							BI->replaceAllUsesWith(replacement);
-						}
-						else if (newOp != Instruction::BinaryOpsEnd) {
-							APInt shiftAmt(BI->getType()->getIntegerBitWidth(), lhs->getValue().logBase2());
-							// Create a new shift instruction
-							BI->replaceAllUsesWith(BinaryOperator::Create(
-								newOp,
-								BI->getOperand(1),
-								ConstantInt::get(BI->getType(), shiftAmt),
-								"",
-								BI
-							));
-						}
-						toErase.push_back(&I);
-						changed = true;
 					}
 				}
 
-				// Part 5: Same Operand Simplification
-				else {
-					LoadInst* lhsValue = dyn_cast<LoadInst>(BI->getOperand(0));
-					LoadInst* rhsValue = dyn_cast<LoadInst>(BI->getOperand(1));
-					bool didCalc = true;
-					APInt result = APInt(BI->getType()->getIntegerBitWidth(), 0);
-					switch (BI->getOpcode()) 
+				//=========================================================
+				// 1.5: Same Operand Patterns (x op x)
+				// Operations where both operands are the same value
+				// Also handles case where both operands are loads from
+				// the same memory address (common in USC-generated IR)
+				//=========================================================
+				bool sameOperand = (lhs == rhs);
+
+				// Check if both operands are loads from the same address
+				if (!sameOperand)
+				{
+					LoadInst* lhsLoad = dyn_cast<LoadInst>(lhs);
+					LoadInst* rhsLoad = dyn_cast<LoadInst>(rhs);
+					if (lhsLoad && rhsLoad)
+					{
+						// Compare the pointer operands (source addresses)
+						if (lhsLoad->getPointerOperand() == rhsLoad->getPointerOperand())
+						{
+							sameOperand = true;
+						}
+					}
+				}
+
+				if (!replacement && sameOperand)
+				{
+					switch (opcode)
 					{
 						case Instruction::Sub:
-							if (!(lhsValue && rhsValue && lhsValue->getPointerOperand() == rhsValue->getPointerOperand())) {
-								didCalc = false;
-							}
+							// x - x = 0: Any value minus itself is 0
+							replacement = ConstantInt::get(binOp->getType(), 0);
 							break;
 						default:
-							didCalc = false;
 							break;
 					}
-					if (didCalc) {
-						BI->replaceAllUsesWith(ConstantInt::get(BI->getType(), result));
-						toErase.push_back(&I);
-						changed = true;
-					}
+				}
+
+				// Apply the replacement if we found one
+				if (replacement)
+				{
+					binOp->replaceAllUsesWith(replacement);
+					removeSet.insert(binOp);
+					changed = true;
 				}
 			}
 		}
 	}
 
-	// Safe deletion after iteration
-	for (Instruction* inst : toErase) {
-		inst->eraseFromParent();
+	//=================================================================
+	// Clean up: Remove all instructions that were replaced
+	// We do this after iteration to avoid invalidating iterators
+	//=================================================================
+	for (Instruction* i : removeSet)
+	{
+		i->eraseFromParent();
 	}
+
 	return changed;
 }
 

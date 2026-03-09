@@ -1,0 +1,42 @@
+// edgeprof10.usc
+// Pattern: Alternating Loop-Branch Pattern
+// Tests interleaved loop and branch structures
+// ~28 edges, 3000x3000 = 9M iterations
+//---------------------------------------------------------
+
+int main()
+{
+    int i = 0;
+    int j = 0;
+    int sum = 0;
+
+    while (i < 3000)
+    {
+        if (i % 2 == 0)
+        {
+            j = 0;
+            while (j < 3000)
+            {
+                sum = sum + 1;
+                j = j + 1;
+            }
+        }
+        else
+        {
+            j = 0;
+            while (j < 3000)
+            {
+                sum = sum + 2;
+                j = j + 1;
+            }
+        }
+
+        if (sum % 50 == 0)
+        {
+            sum = sum / 2;
+        }
+
+        i = i + 1;
+    }
+    return 0;
+}

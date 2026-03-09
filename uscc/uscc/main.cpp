@@ -18,6 +18,12 @@
 #include "../parse/ParseExcept.h"
 #include "../parse/Emitter.h"
 #include <iostream>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/PassRegistry.h>
+#include "../opt/Passes.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma clang diagnostic push
@@ -78,6 +84,22 @@ int main(int argc, const char * argv[])
 			"Option to enable the peeling (1st loop iteration peeling) of the while statement in usc",
 			"-P", "--peeling");
 
+	opt.add("", false, 0, 0,
+			"Enable naive edge profiling (instruments all edges).",
+			"-EN", "--edge-profiling-naive");
+
+	opt.add("", false, 0, 0,
+			"Enable optimized edge profiling (MST + extrapolation).",
+			"-EO", "--edge-profiling-opt");
+
+	opt.add("", false, 0, 0,
+			"Enable both naive and optimized edge profiling for comparison.",
+			"-E", "--edge-profiling");
+
+	opt.add("", false, 0, 0,
+			"Enable Natural Loop Detection",
+			"--natural-loop");
+
 	opt.parse(argc, argv);
 	if (opt.isSet("-h"))
 	{
@@ -99,6 +121,23 @@ int main(int argc, const char * argv[])
 	}
 
 	const char* fileName = opt.lastArgs[0]->c_str();
+
+	// Natural loop detection operates on .bc files directly — skip normal pipeline
+	if (opt.isSet("--natural-loop"))
+	{
+		llvm::SMDiagnostic Err;
+		llvm::LLVMContext myContext;
+		llvm::Module* mod = llvm::ParseIRFile(fileName, Err, myContext);
+		if (!mod) {
+			Err.print("uscc", llvm::errs());
+			return 1;
+		}
+		llvm::legacy::PassManager pm;
+		uscc::opt::registerNaturalLoopPasses(pm);
+		pm.run(*mod);
+		return 0;
+	}
+
 	std::ostream* astStream = nullptr;
 	bool outputSymbols = false;
 	if (opt.isSet("-a") || opt.isSet("-L"))
@@ -144,6 +183,16 @@ int main(int argc, const char * argv[])
 		if (opt.isSet("-O"))
 		{
 			emit.optimize();
+		}
+
+		// Check if we should run edge profiling
+		if (opt.isSet("-EN") || opt.isSet("-E"))
+		{
+			emit.edgeProfileNaive();
+		}
+		if (opt.isSet("-EO") || opt.isSet("-E"))
+		{
+			emit.edgeProfileOpt();
 		}
 
 		bool shouldEmitBC = true;

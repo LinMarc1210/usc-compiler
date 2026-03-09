@@ -86,6 +86,10 @@ public:
 	void writeBitcode(const char* fileName) noexcept;
 	bool verify() noexcept;
 	bool writeAsm(const char* fileName) noexcept;
+	void edgeProfile() noexcept;
+	void edgeProfileNaive() noexcept;
+	void edgeProfileOpt() noexcept;
+	void enableNaturalLoop() noexcept;
 private:
 	CodeContext mContext;
 };
