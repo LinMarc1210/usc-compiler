@@ -85,6 +85,63 @@ bool CommonSubexpressionElimination::runOnFunction(llvm::Function &F) {
     bool globalChanged = false;
 
     // PA3: Implement
+    while (true) {
+        // MARK step
+        bool changedInIter = false;
+        vector<Instruction*> exprsToDelete;
+        vector<LoadInst*> DeadLoads;
 
+        for (auto &bb : F) {
+            vector<Instruction*> available = ae.getInSet(&bb);   // getInSet: get available Instructions in BB
+            for (auto &inst : bb) {
+                if (isa<BinaryOperator>(&inst) || isa<CmpInst>(&inst)) {
+                    for (auto &prevInst : available) {    // Instruction *
+                        if (Search(&inst, prevInst) && &inst != prevInst) {
+                            BasicBlock::iterator insertionPoint = std::prev(BasicBlock::iterator(&inst));
+                            if (ae.isAvailableAfter(*prevInst, *insertionPoint)) {
+                                for (auto op = inst.op_begin() ; op != inst.op_end() ; op++) {
+                                    if (LoadInst *LI = dyn_cast<LoadInst>(op->get())) {
+                                        DeadLoads.push_back(LI);
+                                    }
+                                }
+                                inst.replaceAllUsesWith(prevInst);
+                                exprsToDelete.push_back(&inst);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // SWEEP step
+        for (auto &inst : exprsToDelete) {    // Instruction *
+            inst->eraseFromParent();
+        }
+
+        vector<Instruction*> LoadsToDelete;   
+        for (auto &LI : DeadLoads) {          // Instruction *
+            if (LI->use_empty()) {
+                LoadsToDelete.push_back(LI);
+            }
+        }
+        for (auto &inst : LoadsToDelete) {
+            inst->eraseFromParent();
+        }
+
+        // check if reached fixed-point
+        if (!exprsToDelete.empty()) {
+            changedInIter = true;
+        }
+        if (changedInIter) {
+            globalChanged = true;
+        }
+        else {
+            break;
+        }
+    }
+
+    
     return globalChanged;
 }
