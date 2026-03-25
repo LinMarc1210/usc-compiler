@@ -40,6 +40,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support//FileSystem.h>
 #include <llvm/Support/SourceMgr.h>
+#include <llvm/IRReader/IRReader.h>
 #include <llvm/MC/SubtargetFeature.h>
 #include "../opt/Passes.h"
 #pragma clang diagnostic pop
@@ -151,6 +152,27 @@ void Emitter::doCSE()
 	legacy::PassManager pm;
 	pm.add(createCSEPass());
 	pm.run(*mContext.mModule);
+}
+
+void Emitter::doCopyProp()
+{
+	legacy::PassManager pm;
+	pm.add(createCopyPropagationPass());
+	pm.run(*mContext.mModule);
+}
+
+void Emitter::doPhiRemoval(const char* fileName) noexcept
+{
+  llvm::SMDiagnostic Err;
+  llvm::LLVMContext myContext;
+  llvm::Module* mCurrentModel = ParseIRFile(fileName, Err, myContext);
+  if (!mCurrentModel) {
+    Err.print("uscc", llvm::errs());
+  }
+  legacy::PassManager pm;
+    pm.add(createRedundantPhiRemovalPass());
+	pm.add(createPrintModulePass(outs()));
+	pm.run(*mCurrentModel);
 }
 
 void Emitter::print() noexcept

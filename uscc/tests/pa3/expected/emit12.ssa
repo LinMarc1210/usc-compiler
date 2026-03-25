@@ -1,0 +1,98 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [25 x i8] c"%d is a multiple of %d.\0A\00"
+@.str1 = private unnamed_addr constant [34 x i8] c" is not a multiple of 2, 3 or 5.\0A\00"
+@.str2 = private unnamed_addr constant [23 x i8] c" is a multiple of %d.\0A\00"
+@.str3 = private unnamed_addr constant [3 x i8] c"%d\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  br label %while.cond
+
+while.cond:                                       ; preds = %if.end, %entry
+  %Phi = phi i32 [ %inc, %if.end ], [ 1, %entry ]
+  %lt = icmp slt i32 %Phi, 11
+  br i1 %lt, label %while.body, label %while.end
+
+while.body:                                       ; preds = %while.cond
+  %0 = getelementptr inbounds [3 x i8]* @.str3, i32 0, i32 0
+  %1 = call i32 (i8*, ...)* @printf(i8* %0, i32 %Phi)
+  %mod = srem i32 %Phi, 2
+  %2 = icmp eq i32 %mod, 0
+  %3 = zext i1 %2 to i32
+  %4 = icmp ne i32 %3, 0
+  br i1 %4, label %if.then, label %if.else
+
+while.end:                                        ; preds = %while.cond
+  ret i32 0
+
+if.then:                                          ; preds = %while.body
+  %5 = getelementptr inbounds [23 x i8]* @.str2, i32 0, i32 0
+  %6 = call i32 (i8*, ...)* @printf(i8* %5, i32 2)
+  %mod9 = srem i32 %Phi, 3
+  %7 = icmp eq i32 %mod9, 0
+  %8 = zext i1 %7 to i32
+  %9 = icmp ne i32 %8, 0
+  br i1 %9, label %if.then10, label %if.end11
+
+if.end:                                           ; preds = %if.end15, %if.end3
+  %inc = add i32 %Phi, 1
+  br label %while.cond
+
+if.else:                                          ; preds = %while.body
+  %mod1 = srem i32 %Phi, 3
+  %10 = icmp eq i32 %mod1, 0
+  %11 = zext i1 %10 to i32
+  %12 = icmp ne i32 %11, 0
+  br i1 %12, label %if.then2, label %if.else4
+
+if.then2:                                         ; preds = %if.else
+  %13 = getelementptr inbounds [23 x i8]* @.str2, i32 0, i32 0
+  %14 = call i32 (i8*, ...)* @printf(i8* %13, i32 3)
+  br label %if.end3
+
+if.end3:                                          ; preds = %if.then2, %if.end7
+  br label %if.end
+
+if.else4:                                         ; preds = %if.else
+  %mod5 = srem i32 %Phi, 5
+  %15 = icmp eq i32 %mod5, 0
+  %16 = zext i1 %15 to i32
+  %17 = icmp ne i32 %16, 0
+  br i1 %17, label %if.then6, label %if.else8
+
+if.then6:                                         ; preds = %if.else4
+  %18 = getelementptr inbounds [23 x i8]* @.str2, i32 0, i32 0
+  %19 = call i32 (i8*, ...)* @printf(i8* %18, i32 5)
+  br label %if.end7
+
+if.end7:                                          ; preds = %if.then6, %if.else8
+  br label %if.end3
+
+if.else8:                                         ; preds = %if.else4
+  %20 = getelementptr inbounds [34 x i8]* @.str1, i32 0, i32 0
+  %21 = call i32 (i8*, ...)* @printf(i8* %20)
+  br label %if.end7
+
+if.then10:                                        ; preds = %if.then
+  %22 = getelementptr inbounds [25 x i8]* @.str, i32 0, i32 0
+  %23 = call i32 (i8*, ...)* @printf(i8* %22, i32 %Phi, i32 3)
+  br label %if.end11
+
+if.end11:                                         ; preds = %if.then10, %if.then
+  %mod13 = srem i32 %Phi, 5
+  %24 = icmp eq i32 %mod13, 0
+  %25 = zext i1 %24 to i32
+  %26 = icmp ne i32 %25, 0
+  br i1 %26, label %if.then14, label %if.end15
+
+if.then14:                                        ; preds = %if.end11
+  %27 = getelementptr inbounds [25 x i8]* @.str, i32 0, i32 0
+  %28 = call i32 (i8*, ...)* @printf(i8* %27, i32 %Phi, i32 5)
+  br label %if.end15
+
+if.end15:                                         ; preds = %if.then14, %if.end11
+  br label %if.end
+}

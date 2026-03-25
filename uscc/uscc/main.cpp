@@ -21,7 +21,9 @@
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/PassRegistry.h>
 #include "../opt/Passes.h"
 #pragma GCC diagnostic push
@@ -108,6 +110,8 @@ int main(int argc, const char * argv[])
 	opt.add("", false, 0, 0, "Enable Dead Code Elimination", "-dce");
 	opt.add("", false, 0, 0, "Enable available expression analysis", "-ae");
 	opt.add("", false, 0, 0, "Enable Common Subexpression Elimination (CSE)", "-cse");
+	opt.add("", false, 0, 0, "Enable Redundant Phi Nodes Removal", "-rpr");
+	opt.add("", false, 0, 0, "Enable Copy Propagation", "-copyprop");
 
 	opt.parse(argc, argv);
 	if (opt.isSet("-h"))
@@ -143,6 +147,23 @@ int main(int argc, const char * argv[])
 		}
 		llvm::legacy::PassManager pm;
 		uscc::opt::registerNaturalLoopPasses(pm);
+		pm.run(*mod);
+		return 0;
+	}
+
+	// Redundant phi removal operates on .ll files directly — skip normal pipeline
+	if (opt.isSet("-rpr"))
+	{
+		llvm::SMDiagnostic Err;
+		llvm::LLVMContext myContext;
+		llvm::Module* mod = llvm::ParseIRFile(fileName, Err, myContext);
+		if (!mod) {
+			Err.print("uscc", llvm::errs());
+			return 1;
+		}
+		llvm::legacy::PassManager pm;
+		pm.add(llvm::createRedundantPhiRemovalPass());
+		pm.add(llvm::createPrintModulePass(llvm::outs()));
 		pm.run(*mod);
 		return 0;
 	}
@@ -209,6 +230,11 @@ int main(int argc, const char * argv[])
 			emit.doCSE();
 		}
 
+		if (opt.isSet("-copyprop"))
+		{
+			emit.doCopyProp();
+		}
+
 		// Check if we should run optimization passes
 		if (opt.isSet("-O"))
 		{
@@ -235,6 +261,12 @@ int main(int argc, const char * argv[])
 		if (opt.isSet("-p"))
 		{
 			emit.print();
+		}
+
+		if (opt.isSet("-rpr"))
+		{
+			shouldEmitBC = false;
+			emit.doPhiRemoval(fileName);
 		}
 
 		// Lift the IR to AST and print the human readable .usc code

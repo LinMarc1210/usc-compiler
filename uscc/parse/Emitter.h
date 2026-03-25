@@ -27,6 +27,7 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include "llvm/IRReader/IRReader.h"
 
 namespace uscc
 {
@@ -95,6 +96,8 @@ public:
 	void doLiveness();
 	void doAE();
 	void doCSE();
+	void doCopyProp();
+	void doPhiRemoval(const char* fileName) noexcept;
 private:
 	CodeContext mContext;
 };

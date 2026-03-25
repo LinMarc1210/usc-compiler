@@ -1,0 +1,25 @@
+// ssa_for_break_continue.usc
+// Tests for loop with break and continue
+
+int main()
+{
+	int i = 0;
+	int sum = 0;
+
+	for (i = 0; i < 10; i = i + 1)
+	{
+		if (i == 3)
+		{
+			continue;
+		}
+		if (i == 7)
+		{
+			break;
+		}
+		sum = sum + i;
+	}
+
+	printf("%d\n", sum);
+
+	return 0;
+}

@@ -1,0 +1,32 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %0 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %tobool = icmp ne i32 0, 0
+  br i1 %tobool, label %lor.end2, label %lor.rhs1
+
+lor.rhs:                                          ; preds = %lor.end2
+  %tobool5 = icmp ne i32 1, 0
+  br label %lor.end
+
+lor.end:                                          ; preds = %lor.rhs, %lor.end2
+  %1 = phi i1 [ true, %lor.end2 ], [ %tobool5, %lor.rhs ]
+  %2 = zext i1 %1 to i32
+  %3 = call i32 (i8*, ...)* @printf(i8* %0, i32 %2)
+  ret i32 0
+
+lor.rhs1:                                         ; preds = %entry
+  %tobool3 = icmp ne i32 0, 0
+  br label %lor.end2
+
+lor.end2:                                         ; preds = %lor.rhs1, %entry
+  %4 = phi i1 [ true, %entry ], [ %tobool3, %lor.rhs1 ]
+  %5 = zext i1 %4 to i32
+  %tobool4 = icmp ne i32 %5, 0
+  br i1 %tobool4, label %lor.end, label %lor.rhs
+}

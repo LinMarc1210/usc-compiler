@@ -1,53 +1,53 @@
 ********** Live-in/Live-out information **********
-********** Function: main, analysis iterates 2 times
+********** Function: main, analysis iterates 1 times
 entry:
   IN:
-  OUT: x
+  OUT:
 while.cond:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
 while.body:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
 while.end:
   IN:
   OUT:
 if.then:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
 if.end:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
 if.else:
-  IN: x
-  OUT: x
-if.then5:
-  IN: x
-  OUT: x
-if.end6:
-  IN: x
-  OUT: x
-if.else7:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
+if.then2:
+  IN:
+  OUT:
+if.end3:
+  IN:
+  OUT:
+if.else4:
+  IN:
+  OUT:
+if.then6:
+  IN:
+  OUT:
+if.end7:
+  IN:
+  OUT:
+if.else8:
+  IN:
+  OUT:
 if.then10:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
 if.end11:
-  IN: x
-  OUT: x
-if.else12:
-  IN: x
-  OUT: x
-if.then15:
-  IN: x
-  OUT: x
-if.end16:
-  IN: x
-  OUT: x
-if.then20:
-  IN: x
-  OUT: x
-if.end21:
-  IN: x
-  OUT: x
+  IN:
+  OUT:
+if.then14:
+  IN:
+  OUT:
+if.end15:
+  IN:
+  OUT:
