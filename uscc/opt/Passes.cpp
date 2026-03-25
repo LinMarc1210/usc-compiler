@@ -37,7 +37,7 @@ void registerOptPasses(legacy::PassManager& pm)
 	// pm.add(new LICM());
 	pm.add(new DominatorTreeWrapperPass());
 	pm.add(new LoopInfo());
-    // pm.add(new InstCombine());
+    pm.add(new InstCombine());
 }
 
 void registerEdgeProfilingPass(legacy::PassManager& pm)
