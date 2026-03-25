@@ -1,0 +1,25 @@
+// ssa_switch_default.usc
+// Tests switch with explicit default case (requires PHI at switch.end from cases + default)
+
+int main()
+{
+	int x = 5;
+	int result = 0;
+
+	switch (x)
+	{
+		case 1:
+			result = 10;
+			break;
+		case 2:
+			result = 20;
+			break;
+		default:
+			result = 99;
+			break;
+	}
+
+	printf("%d\n", result);
+
+	return 0;
+}

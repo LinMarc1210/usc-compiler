@@ -162,125 +162,131 @@ bool AvailableExpressions::runOnFunction(Function &F) {
         return false;
 
     // Step 1: Identify all expressions and create mappings
-    // PA3: Implement
-    uint32_t ID = 0;
-    for (auto &bb : F) {
-        for (auto &inst : bb) {
-            if (isa<BinaryOperator>(&inst) || isa<CmpInst>(&inst)) { // same with dyn_cast
-                expr2Id[&inst] = ID;
-                id2Expr.push_back(&inst);
-                universalSet.insert(ID);
-                ID++;
+    universalSet.clear();
+    expr2Id.clear();
+    id2Expr.clear();
+    uint32_t idCounter = 0;
+    for (auto &BB : F) {
+        for (auto &Inst : BB) {
+            if (isa<BinaryOperator>(&Inst) || isa<CmpInst>(&Inst)) {
+                expr2Id[&Inst] = idCounter;
+                id2Expr.push_back(&Inst);
+                universalSet.insert(idCounter);
+                // llvm::outs() << "ID: " << idCounter << " " << Inst << "\n";
+                idCounter++;
             }
         }
     }
-    
+
     // Step 2: Calculate GEN and KILL sets
-    // PA3: Implement
-    for (auto &bb : F) {
-        set<uint32_t> GEN = {};
-        set<uint32_t> KILL = {};
+    for (auto &BB : F) {
+        set<uint32_t> currentGen;
+        set<uint32_t> currentKill;
 
-        for (auto &inst : bb) {
-            set<uint32_t> G;    // GEN[X] = G + (GEN[X] - K)
-            set<uint32_t> K;    // KILL[X] = K + (KILL[X] - G)
+        for (auto &Inst : BB) {
+            set<uint32_t> G_inst = {}; // G
+            set<uint32_t> K_inst = {}; // K
 
-            // case 1: when inst produces a result value
-            if (!inst.getType()->isVoidTy() && !isa<AllocaInst>(&inst)) {
-                // example: %result = add i32 %x, %y
-                // instruction 'I' defined the Value '%result'
-                Instruction *I = &inst;    // Access the entire instruction (add)
-                Value *result_I = I;       // Access the result of operation (%result) by Upcasting (Instruction -> Value)
+            // Update KILL Set
+            if (auto* SI = dyn_cast<StoreInst>(&Inst)) {
+                Value* pointerOp = SI->getPointerOperand();
                 for (uint32_t id : universalSet) {
-                    Instruction *expr = id2Expr[id];
-                    for (User::op_iterator op = expr->op_begin() ; op != expr->op_end() ; ++op) {  // iterate all operand for each instruction (expr)
-                        Value *operandValue = op->get(); // Access actual operand value(llvm::Value) from op_iterator (%a, %b)
-                        // means '%result' is used as some expr's operand, so expr is killed by 'I'
-                        if (operandValue == result_I) {
-                            K.insert(id);
-                        }
-                    }
-                }
-            }
-            // case 2: when inst is the StoreInst
-            else if (StoreInst *SI = dyn_cast<StoreInst>(&inst)) {
-                Value *val = SI->getPointerOperand();    // store/load location 
-                for (uint32_t id : universalSet) {
-                    Instruction *expr = id2Expr[id];
-                    for (User::op_iterator op = expr->op_begin() ; op != expr->op_end() ; ++op) {  // iterate all operand for each instruction (expr)
-                        Value *operandValue = op->get();
-                        if (LoadInst *LI = dyn_cast<LoadInst>(operandValue)) {
-                            if (LI->getPointerOperand() == val) {
-                                K.insert(id);
+                    Instruction* expr = id2Expr[id];
+
+                    for (User::op_iterator op = expr->op_begin(), E = expr->op_end(); op != E; ++op) {
+                        if (auto* LI = dyn_cast<LoadInst>(op->get())) {
+                            if (LI->getPointerOperand() == pointerOp) {
+                                K_inst.insert(id);
+                                break;
                             }
                         }
                     }
                 }
             }
-
-            // Compute G
-            if (expr2Id.count(&inst)) {    // if it's generated (expr)
-                G.insert(expr2Id[&inst]);
+            else if (!Inst.getType()->isVoidTy() && !isa<AllocaInst>(&Inst)) {
+                Value* def = &Inst;
+                for (uint32_t id : universalSet) {
+                    Instruction* expr = id2Expr[id];
+                    for (User::op_iterator op = expr->op_begin(), E = expr->op_end(); op != E; ++op) {
+                        if (op->get() == def) {
+                            K_inst.insert(id);
+                            break;
+                        }
+                    }
+                }
             }
 
-            // Compute GEN, KILL set
-            GEN = set_union(G, set_difference(GEN, K));
-            KILL = set_union(K, set_difference(KILL, G));
-        }
-        bb2Gen[&bb] = GEN;
-        bb2Kill[&bb] = KILL;
-    }
+            // Update GEN Set
+            if (expr2Id.count(&Inst)) {
+                G_inst.insert(expr2Id[&Inst]);
+            }
 
+            // // GEN = G + (GEN - K)
+            currentGen = set_union(G_inst, set_difference(currentGen, K_inst));
+            // // KILL = K + (KILL - G)
+            currentKill = set_union(K_inst, set_difference(currentKill, G_inst));
+        }
+        bb2Gen[&BB] = currentGen;
+        bb2Kill[&BB] = currentKill;
+    }
 
     // Step 3: Initialize IN and OUT sets
-    // PA3: Implement
-    for (auto &bb : F) {
-        if (&bb == &F.front()) {  // cannot compare BasicBlock, so take address to compare
-            bb2In[&bb] = {};
-            bb2Out[&bb] = {};
+    bb2In.clear();
+    bb2Out.clear();
+    BasicBlock& entryBlock = F.getEntryBlock();
+    bb2Out[&entryBlock] = set<uint32_t>();
+    for (auto &BB : F) {
+        if (&BB != &entryBlock) {
+            bb2Out[&BB] = bb2Gen[&BB]; // Optimistically assume GEN set
         }
-        else {
-            bb2In[&bb] = {};
-            bb2Out[&bb] = bb2Gen[&bb];
-        }
+        bb2In[&BB] = set<uint32_t>();
     }
 
-    // Step 4: Worklist algorithm 
-    // PA3: Implement
+    // Step 4: Worklist algorithm
+    // Step 4.1) Compute reverse post order traversal
+    set<BasicBlock *> visited;
     std::deque<BasicBlock*> worklist;
-    std::set<BasicBlock*> visited;
-    computePostOrder(&(F.front()), visited, worklist);
+    computePostOrder(&F.front(), visited, worklist);
 
     unsigned iterationCount = 0;
     while (!worklist.empty()) {
-        BasicBlock *curr = worklist.back();  // reverse-postorder, so pop from back
+        iterationCount++;
+        // Reverse post order
+        BasicBlock* BB = worklist.back();
         worklist.pop_back();
 
-        // Compute IN set
-        set<uint32_t> newIn = {};
-        bool first = true;
-        for (auto it = pred_begin(curr), end = pred_end(curr) ; it != end ; it++) {
-            if (first) {
-                newIn = bb2Out[*it];
-                first = false;
-            }
-            newIn = intersect(newIn, bb2Out[*it]);
-        }
-        bb2In[curr] = newIn;
-
-        // Compute OUT set
-        set<uint32_t> newOut = set_union(bb2Gen[curr], set_difference(newIn, bb2Kill[curr]));
-        
-        // Check fixed-point
-        if (newOut != bb2Out[curr]) {
-            bb2Out[curr] = newOut;
-            // add successors back to postorder worklist
-            for (auto it = succ_begin(curr), end = succ_end(curr) ; it != end ; it++) {
-                worklist.push_front(*it);
+        // Step 4.2) Meet Operator (Intersection)
+        set<uint32_t> newIn;
+        bool firstPred = true;
+        if (pred_begin(BB) != pred_end(BB)) {
+            for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
+                 BasicBlock* Pred = *PI;
+                 if (firstPred) {
+                    newIn = bb2Out.at(Pred); // Get OUT set of predecessor
+                    firstPred = false;
+                 } else {
+                    newIn = intersect(newIn, bb2Out.at(Pred));
+                 }
             }
         }
+        else {
+            newIn.clear();
+        }
+        bb2In[BB] = newIn;
 
-        iterationCount++;
+        // Step 4.3) Transfer Function
+        set<uint32_t> oldOut = bb2Out[BB];
+        set<uint32_t> inMinusKill = set_difference(bb2In[BB], bb2Kill[BB]);
+        set<uint32_t> newOut = set_union(bb2Gen[BB], inMinusKill);
+
+        // Step 4.4) Change Detection and Worklist Update
+        if (!areSetsEqual(oldOut, newOut)) {
+            bb2Out[BB] = newOut;
+            for (succ_iterator SI = succ_begin(BB), E = succ_end(BB); SI != E; ++SI) {
+                BasicBlock* Succ = *SI;
+                worklist.push_front(Succ);
+            }
+        }
     }
 
     if (enableAE) {
@@ -300,57 +306,52 @@ bool AvailableExpressions::isAvailableAfter(Instruction &expr, Instruction &poin
         return false; // Should not happen
     }
 
-    // PA3: Implement
-    uint32_t target_id = expr2Id[&expr];
+    // Perform intra-block analysis starting from the block's IN set
     set<uint32_t> available = bb2In[bb];
 
-    for (auto &inst : *bb) {
-
-        // Apply KILL effect on available
-        // case 1: when inst produces a result value
-        if (!inst.getType()->isVoidTy() && !isa<AllocaInst>(&inst)) {
-            // example: %result = add i32 %x, %y
-            // instruction 'I' defined the Value '%result'
-            Instruction *I = &inst;    // Access the entire instruction (add)
-            Value *result_I = I;       // Access the result of operation (%result) by Upcasting (Instruction -> Value)
-            for (uint32_t id : universalSet) {
-                Instruction *expr = id2Expr[id];
-                for (User::op_iterator op = expr->op_begin() ; op != expr->op_end() ; ++op) {  // iterate all operand for each instruction (expr)
-                    Value *operandValue = op->get(); // Access actual operand value(llvm::Value) from op_iterator (%a, %b)
-                    // means '%result' is used as some expr's operand, so expr is killed by 'I'
-                    if (operandValue == result_I) {
-                        available.erase(id);    // KILL effect on available
-                    }
-                }
-            }
-        }
-        // case 2: when inst is the StoreInst
-        else if (StoreInst *SI = dyn_cast<StoreInst>(&inst)) {
-            Value *val = SI->getPointerOperand();    // store/load location 
-            for (uint32_t id : universalSet) {
-                Instruction *expr = id2Expr[id];
-                for (User::op_iterator op = expr->op_begin() ; op != expr->op_end() ; ++op) {  // iterate all operand for each instruction (expr)
-                    Value *operandValue = op->get();
-                    if (LoadInst *LI = dyn_cast<LoadInst>(operandValue)) {
-                        if (LI->getPointerOperand() == val) {
-                            available.erase(id);
+    for (auto &Inst : *bb) {
+        // Apply KILL logic
+        if (auto* SI = dyn_cast<StoreInst>(&Inst)) {
+            Value* pointerOp = SI->getPointerOperand();
+            for (auto it = available.begin(); it != available.end(); ) {
+                Instruction* currentExpr = id2Expr[*it];
+                bool killed = false;
+                for (User::op_iterator op = currentExpr->op_begin(), E = currentExpr->op_end(); op != E; ++op) {
+                    if (auto* LI = dyn_cast<LoadInst>(op->get())) {
+                        if (LI->getPointerOperand() == pointerOp) {
+                            it = available.erase(it);
+                            killed = true;
+                            break;
                         }
                     }
                 }
+                if (!killed) ++it;
+            }
+        } else if (!Inst.getType()->isVoidTy() && !isa<AllocaInst>(&Inst)) {
+            Value* def = &Inst;
+            for (auto it = available.begin(); it != available.end(); ) {
+                 Instruction* currentExpr = id2Expr[*it];
+                 bool killed = false;
+                 for (User::op_iterator op = currentExpr->op_begin(), E = currentExpr->op_end(); op != E; ++op) {
+                     if (op->get() == def) {
+                         it = available.erase(it);
+                         killed = true;
+                         break;
+                     }
+                 }
+                 if (!killed) ++it;
             }
         }
 
-
-        // Apply GEN effect on available
-        if (expr2Id.count(&inst)) {    // if it's generated (expr)
-            available.insert(expr2Id[&inst]);
+        // Apply GEN logic
+        if (expr2Id.count(&Inst)) {
+            available.insert(expr2Id[&Inst]);
         }
 
-
-        // when Inst == point, return whether expr's ID is in available set or not.
-        if (&inst == &point) {
-            break;
+        uint32_t targetId = expr2Id[&expr];
+        if (&Inst == &point) {
+            return available.count(targetId);
         }
     }
-    return available.count(target_id);
+    return false;
 }

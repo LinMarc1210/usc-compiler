@@ -29,15 +29,16 @@ namespace opt
 void registerOptPasses(legacy::PassManager& pm)
 {
 	PassRegistry& pr = *PassRegistry::getPassRegistry();
-	initializeLoopInfoPass(pr);
-	initializeDominatorTreeWrapperPassPass(pr);
+	// initializeLoopInfoPass(pr);
+	// initializeDominatorTreeWrapperPassPass(pr);
 	// pm.add(new ConstantOps());
 	// pm.add(new ConstantBranch());
 	// pm.add(new DeadBlocks());
 	// pm.add(new LICM());
-	pm.add(new DominatorTreeWrapperPass());
-	pm.add(new LoopInfo());
-    pm.add(new InstCombine());
+	// pm.add(new DominatorTreeWrapperPass());
+	// pm.add(new LoopInfo());
+    // pm.add(new InstCombine());
+	// pm.add(new CopyPropagation());
 }
 
 void registerEdgeProfilingPass(legacy::PassManager& pm)
@@ -66,6 +67,7 @@ void registerAnalysisPasses(llvm::PassRegistry &Registry)
     initializeLivenessPass(Registry);
     initializeAvailableExpressionsPass(Registry);
 }
+
 
 } // opt
 } // uscc

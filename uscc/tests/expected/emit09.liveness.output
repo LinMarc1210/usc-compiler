@@ -1,17 +1,17 @@
 ********** Live-in/Live-out information **********
-********** Function: main, analysis iterates 2 times
+********** Function: main, analysis iterates 1 times
 entry:
   IN:
-  OUT: y z
+  OUT:
 lor.rhs:
-  IN: z
+  IN:
   OUT:
 lor.end:
   IN:
   OUT:
 lor.rhs1:
-  IN: y z
-  OUT: z
+  IN:
+  OUT:
 lor.end2:
-  IN: z
-  OUT: z
+  IN:
+  OUT:

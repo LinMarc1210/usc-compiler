@@ -6,13 +6,10 @@ declare i32 @printf(i8*, ...)
 
 define i32 @main() {
 entry:
-  %c.addr = alloca i32
-  %a.addr = alloca i32
-  store i32 5, i32* %a.addr
-  %a2 = load i32* %a.addr
-  %mul3 = mul i32 %a2, 6
-  store i32 %mul3, i32* %c.addr
-  %c = load i32* %c.addr
-  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([7 x i8]* @.str, i32 0, i32 0), i32 %c)
+  %mul = mul i32 5, 2
+  %add = add i32 5, %mul
+  %mul1 = mul i32 5, 6
+  %0 = getelementptr inbounds [7 x i8]* @.str, i32 0, i32 0
+  %1 = call i32 (i8*, ...)* @printf(i8* %0, i32 %mul1)
   ret i32 0
 }
