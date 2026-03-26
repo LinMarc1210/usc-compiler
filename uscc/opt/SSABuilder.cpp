@@ -108,7 +108,17 @@ Value* SSABuilder::readVariableRecursive(Identifier* var, BasicBlock* block)
 	// incomplete CFG
 	if (!mSealedBlocks.count(block)) {
 		// 1: Type of var, 2: preserved basic blocks before, 3: name, 4: insertion point of phi
-		llvm::PHINode* phi = llvm::PHINode::Create(Ty, 0, "Phi", insertPoint);
+		llvm::PHINode* phi = nullptr;
+		// 1) when getFirstNonPHI returns end iterator
+		if (insertPoint == block->end()) {
+			// give block iterator as the argument to create PHINode
+			// (NO non-PHI instructions --> append the new PHI node at the end of basic block)
+			phi = llvm::PHINode::Create(Ty, 0, "Phi", block);
+		// 2) when getFirstNonPHI NOT returns end iterator
+		} else {
+			// give instruction iterator instead
+			phi = llvm::PHINode::Create(Ty, 0, "Phi", insertPoint);
+		}
 		retVal = phi;   // upcasting
 		(*mIncompletePhis[block])[var] = phi;
 	}
@@ -120,6 +130,11 @@ Value* SSABuilder::readVariableRecursive(Identifier* var, BasicBlock* block)
 	// Break potential cycles with operandless phi
 	else {
 		llvm::PHINode* phi = nullptr;
+		if (insertPoint == block->end()) {
+			phi = llvm::PHINode::Create(Ty, 0, "Phi", block);
+		} else {
+			phi = llvm::PHINode::Create(Ty, 0, "Phi", insertPoint);
+		}
 		retVal = phi;
 		writeVariable(var, block, phi);
 		retVal = addPhiOperands(var, phi);
