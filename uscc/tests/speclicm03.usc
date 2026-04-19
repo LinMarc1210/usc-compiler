@@ -1,0 +1,36 @@
+// fplicm03.usc
+// Load through a loop-invariant index (arr[5]) with an infrequent write via
+// arr[i] on an infrequent path. The GEP target is invariant; FPLICM's
+// syntactic may-alias check sees arr[5] and arr[i] as potentially the same
+// only when the expression matches. Here the infrequent store is arr[i],
+// which the check treats conservatively — still allowed because the profile
+// filter only fires for "conflict on frequent path", and arr[i] writes are
+// infrequent.
+int main()
+{
+	int arr[16];
+	int i;
+	int sum;
+
+	i = 0;
+	while (i < 16)
+	{
+		arr[i] = 5 - i;
+		i = i + 1;
+	}
+
+	i = 0;
+	sum = 0;
+	while (i < 200)
+	{
+		sum = sum + arr[5];
+		if (i - ((i / 23) * 23) == 0)
+		{
+			arr[i - ((i / 16) * 16)] = i;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

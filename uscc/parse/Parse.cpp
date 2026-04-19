@@ -33,8 +33,9 @@ using std::make_shared;
 
 // Constructor takes in a file name and performs the parse
 Parser::Parser(const char* fileName, std::ostream* errStream, std::ostream* warnStream,
-			   std::ostream* ASTStream, bool outputSymbols)
-: mCurrToken(Token::Unknown)
+			   std::ostream* ASTStream, bool outputSymbols, bool rBC)
+: mLexer(nullptr)
+, mCurrToken(Token::Unknown)
 , mFileName(fileName)
 , mFileStream(fileName)
 , mErrStream(errStream)
@@ -46,44 +47,49 @@ Parser::Parser(const char* fileName, std::ostream* errStream, std::ostream* warn
 , mNeedPrintf(false)
 , mCheckSemant(true)
 , mOutputSymbols(outputSymbols)
+, readBC(rBC)
 {
-	if (mFileStream.is_open())
+	if (!readBC)
 	{
-		mLexer = new yyFlexLexer(&mFileStream);
-
-		try
+		if (mFileStream.is_open())
 		{
-			// Get the first token
-			consumeToken();
+			mLexer = new yyFlexLexer(&mFileStream);
 
-			// Now start the parse
-			mRoot = parseProgram();
+			try
+			{
+				// Get the first token
+				consumeToken();
+
+				// Now start the parse
+				mRoot = parseProgram();
+			}
+			catch (ParseExcept& e)
+			{
+				reportError(e);
+			}
 		}
-		catch (ParseExcept& e)
+		else
 		{
-			reportError(e);
+			throw FileNotFound();
+		}
+
+		if (!IsValid())
+		{
+			displayErrors();
+		}
+
+		if (!IsWarn())
+		{
+			displayWarns();
 		}
 	}
-	else
-	{
-		throw FileNotFound();
-	}
-
-	if (!IsValid())
-	{
-		displayErrors();
-	}
-
-    if (!IsWarn())
-    {
-        displayWarns();
-    }
 }
 
 // Destructor not virtual; I don't expect any inheritance
 Parser::~Parser()
 {
-	delete mLexer;
+	if (mLexer)
+		delete mLexer;
 }
 
 // Returns the string for the current token's text

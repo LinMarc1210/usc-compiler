@@ -627,8 +627,6 @@ AST_EMIT(ASTAssignArrayStmt)
 
 AST_EMIT(ASTIfStmt)
 {
-    // PA4: Register each new basic block with ctx.mSSA.addBlock()
-    // and seal blocks once all predecessors are known
     auto value = this->mExpr->emitIR(ctx);
     IRBuilder<true, NoFolder> builder(ctx.mBlock);
     if (!value->getType()->isIntegerTy(1))
@@ -680,8 +678,6 @@ AST_EMIT(ASTWhileStmt)
       this->mPeeling = true;
     }
     else {
-      // PA4: Register each new basic block with ctx.mSSA.addBlock()
-      // and seal blocks once all predecessors are known
       auto condBlock = BasicBlock::Create(ctx.mGlobal, "while.cond", ctx.mFunc);
       // PA4: Register each new basic block with ctx.mSSA.addBlock()
       // and seal blocks once all predecessors are known
@@ -771,8 +767,6 @@ AST_EMIT(ASTContinueStmt)
 
 AST_EMIT(ASTForStmt)
 {
-    // PA4: Register each new basic block with ctx.mSSA.addBlock()
-    // and seal blocks once all predecessors are known
     // 1. Create all the basic blocks needed for the loop structure
     llvm::BasicBlock* condBlock = llvm::BasicBlock::Create(ctx.mGlobal, "for.cond", ctx.mFunc);
     // PA4: Register each new basic block with ctx.mSSA.addBlock()
@@ -840,8 +834,6 @@ AST_EMIT(ASTForStmt)
 
 AST_EMIT(ASTDoWhileStmt)
 {
-    // PA4: Register each new basic block with ctx.mSSA.addBlock()
-    // and seal blocks once all predecessors are known
     // 1. Create the basic blocks for the loop structure
     llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(ctx.mGlobal, "dowhile.body", ctx.mFunc);
     // PA4: Register each new basic block with ctx.mSSA.addBlock()
@@ -895,8 +887,6 @@ AST_EMIT(ASTDoWhileStmt)
 
 AST_EMIT(ASTSwitchStmt)
 {
-    // PA4: Register each new basic block with ctx.mSSA.addBlock()
-    // and seal blocks once all predecessors are known
     // 1. Emit the value we are switching on
     llvm::Value* switchValue = mExpr->emitIR(ctx);
 

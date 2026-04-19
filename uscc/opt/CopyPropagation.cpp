@@ -19,84 +19,58 @@ namespace opt
 	virtual bool runOnFunction(Function &F) {
 		bool Changed = false;
 
-		// PA4: Implement intra-block store-to-load forwarding
-		//
+		// Intra-block store-to-load forwarding for array memory ops.
 		// In SSA form, regular variables have no allocas — only arrays
 		// remain as memory operations (via GEP + store/load).
-		//
-		// For each basic block, track stores to array elements (via GEP)
-		// and forward stored values to subsequent loads from the same address.
-		// Handle aliasing conservatively: a store through a variable index
-		// invalidates all forwarding entries for that array base.
-		// Clear the map on function calls (may modify memory).
-
-		for (auto &bb : F) {
-			// maps (base,index) to the last stored LLVM value
-			// { {base, index}, value }
+		for (auto &BB : F) {
+			// Map from (base ptr, index) -> last stored value
 			std::map<std::pair<Value*, Value*>, Value*> avail;
-			std::vector<LoadInst*> dead;   // redundant load instructions to erase later
+			std::vector<Instruction*> dead;
 
-			// GetElementPtr (GEP): array index calculation is done by GEP
-			// only do ptr offset, don't do store/load
-			// base: base ptr address
-			// index: offset from base
+			for (auto &I : BB) {
+				if (auto *SI = dyn_cast<StoreInst>(&I)) {
+					// Only handle single-index GEPs (array element access)
+					auto *G = dyn_cast<GetElementPtrInst>(SI->getPointerOperand());
+					if (!G || G->getNumIndices() != 1) continue;
+					Value *b = G->getPointerOperand(), *i = G->getOperand(1);
 
-			for (auto &inst : bb) {
-				// if Inst is a store to a single-index GetElementPtr
-				// StoreInst ex. ====> store i32 %val, i32* %ptr
-				// GEP ex. ====> %ptr = getelementptr <type>, <base>, <index 0>, <index 1>, ...
-				if (auto *SI = dyn_cast<StoreInst>(&inst)) {
-					if (auto *GEP = dyn_cast<GetElementPtrInst>(SI->getPointerOperand())) {
-
-						Value *base = GEP->getPointerOperand();
-						Value *index = GEP->getOperand(GEP->getNumOperands() - 1);   // index operand is the last operand
-						Value *val = SI->getValueOperand();
-
-						if (!isa<ConstantInt>(index)) {
-							for (auto it = avail.begin() ; it != avail.end() ; ) {
-								if ((it->first).first == base) {
-									it = avail.erase(it);    // return the following iterator
-								}
-								else {
-									it++;  // when not removing, move to next iterator
-								}
-							}
-						}
-						
-						avail[{base, index}] = val;
-					}
-				}
-				else if (auto *LI = dyn_cast<LoadInst>(&inst)) {
-					if (auto *GEP = dyn_cast<GetElementPtrInst>(LI->getPointerOperand())) {
-
-						Value *base = GEP->getPointerOperand();
-						Value *index = GEP->getOperand(GEP->getNumOperands() - 1);   // index operand is the last operand
-
-						if (avail.count({base, index})) {
-							Value *replacement = avail[{base, index}];
-							LI->replaceAllUsesWith(replacement);
-							dead.push_back(LI);
-
-							Changed = true;
+					// Variable index may alias any element — invalidate all
+					// entries with the same base pointer
+					if (!isa<ConstantInt>(i)) {
+						for (auto it = avail.begin(); it != avail.end();) {
+							it = (it->first.first == b) ? avail.erase(it) : std::next(it);
 						}
 					}
-				}
-				else if (isa<CallInst>(inst)) {
-					avail.clear();    // the call may modify memory
+					avail[{b, i}] = SI->getValueOperand();
+
+				} else if (auto *LI = dyn_cast<LoadInst>(&I)) {
+					auto *G = dyn_cast<GetElementPtrInst>(LI->getPointerOperand());
+					if (!G || G->getNumIndices() != 1) continue;
+
+					// If we have a stored value for this (base, index),
+					// forward it and mark the load as dead
+					auto it = avail.find({G->getPointerOperand(), G->getOperand(1)});
+					if (it != avail.end()) {
+						LI->replaceAllUsesWith(it->second);
+						dead.push_back(LI);
+						Changed = true;
+					}
+
+				} else if (isa<CallInst>(&I)) {
+					// Calls may modify memory — invalidate everything
+					avail.clear();
 				}
 			}
 
-			for (auto *D : dead) {    // LoadInst*
-				Value *G = D->getPointerOperand();
+			// Erase dead loads and their unused feeding GEPs
+			for (auto *D : dead) {
+				auto *G = dyn_cast<GetElementPtrInst>(cast<LoadInst>(D)->getPointerOperand());
 				D->eraseFromParent();
-				if (auto *GEP = dyn_cast<GetElementPtrInst>(G)) {
-					if (GEP->use_empty()) {
-						GEP->eraseFromParent();
-					}
+				if (G && G->use_empty()) {
+					G->eraseFromParent();
 				}
 			}
 		}
-
 		return Changed;
 	}
 };

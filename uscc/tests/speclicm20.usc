@@ -1,0 +1,25 @@
+// fplicm20.usc
+// Negative / regression: the store is on the FREQUENT path. With profile
+// data, the profile filter must reject speculation (anyConflictOnFrequentPath
+// returns true). Without profile, FPLICM's alias check still handles it
+// correctly. Verifies that rejection produces the same output as the
+// unoptimized build.
+int main()
+{
+	int arr[2];
+	int i;
+	int sum;
+
+	arr[0] = 1;
+	arr[1] = 0;
+
+	sum = 0;
+	for (i = 0; i < 20; i = i + 1)
+	{
+		sum = sum + arr[0];
+		arr[0] = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

@@ -1,0 +1,39 @@
+// fplicm14.usc
+// Triply-nested loops — the innermost load is invariant inside the
+// innermost loop. Tests LoopPass ordering + nested-guard robustness.
+int main()
+{
+	int arr[2];
+	int i;
+	int j;
+	int k;
+	int sum;
+
+	arr[0] = 2;
+	arr[1] = 0;
+
+	i = 0;
+	sum = 0;
+	while (i < 3)
+	{
+		j = 0;
+		while (j < 4)
+		{
+			k = 0;
+			while (k < 5)
+			{
+				sum = sum + arr[0];
+				k = k + 1;
+			}
+			j = j + 1;
+		}
+		if (i - ((i / 2) * 2) == 0)
+		{
+			arr[0] = i + 3;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

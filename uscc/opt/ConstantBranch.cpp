@@ -33,12 +33,14 @@ bool ConstantBranch::runOnFunction(Function& F)
 {
 	bool changed = false;
 	
+	// PA5: Implement
 	
 	return changed;
 }
 
 void ConstantBranch::getAnalysisUsage(AnalysisUsage& Info) const
 {
+	// PA5: Implement
 }
 	
 } // opt

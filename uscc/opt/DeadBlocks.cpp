@@ -32,12 +32,14 @@ bool DeadBlocks::runOnFunction(Function& F)
 {
 	bool changed = false;
 	
+	// PA5: Implement
 	
 	return changed;
 }
 	
 void DeadBlocks::getAnalysisUsage(AnalysisUsage& Info) const
 {
+	// PA5: Implement
 }
 
 } // opt
