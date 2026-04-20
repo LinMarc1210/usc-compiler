@@ -186,6 +186,39 @@ bool SpecLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
 
 void SpecLICM::hoistRegion(DomTreeNode *startNode) {
   // PA5: Implement
+  BasicBlock *bb = startNode->getBlock();
+
+  if (inCurrentLoop(bb)){
+
+    std::vector<Instruction*> InstList;
+    for (Instruction &inst : *bb) {    // copy inst in bb
+      InstList.push_back(&inst);
+    }
+
+    for (auto *currentInstr : InstList) {
+      if (std::find(InstList.begin(), InstList.end(), currentInstr) == InstList.end()) {
+        continue; // if moved out of bb, just skip
+      }
+      if (isSafeToHoist(currentInstr)) {
+        if (canHoistInst(currentInstr)) {
+          hoistInst(currentInstr);
+        }
+        else if (enableSpecLICM && isa<LoadInst>(currentInstr)) {
+          LoadInst *LI = dyn_cast<LoadInst>(currentInstr);
+          if (!frequentPath.empty() && anyConflictOnFrequentPath(LI)) {
+            continue;
+          }
+          specHoistInst(LI);
+        }
+      }
+    }
+  }
+
+  std::vector<DomTreeNode*> children = startNode->getChildren();
+  for (auto *child : children) {
+    hoistRegion(child);
+  }
+
 }
 
 bool SpecLICM::isSafeToHoist(llvm::Instruction *inst) {
