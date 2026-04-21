@@ -533,6 +533,33 @@ void SpecLICM::computeFrequentPath(Loop *L) {
 
 bool SpecLICM::anyConflictOnFrequentPath(LoadInst *ld) {
   // PA5: Implement
+  if (frequentPath.empty()) {
+    return false;
+  }
+
+  Value* opLoad = ld->getPointerOperand();
+
+  for (auto *bb : frequentPath) {
+    for (auto &inst : *bb) {
+      if (!isa<StoreInst>(&inst)) {
+        continue;
+      }
+      StoreInst *SI = dyn_cast<StoreInst>(&inst);
+      Value *opStore = SI->getPointerOperand();
+      if (opLoad == opStore) {
+        return true;
+      }
+
+      GetElementPtrInst *gepStore = dyn_cast<GetElementPtrInst>(opStore);
+      GetElementPtrInst *gepLoad = dyn_cast<GetElementPtrInst>(opLoad);
+      if (gepStore && gepLoad) {
+        if (gepStore->isIdenticalTo(gepLoad)) {
+          return true;
+        }
+      }
+    }
+  }
+  
   return false;
 }
 
