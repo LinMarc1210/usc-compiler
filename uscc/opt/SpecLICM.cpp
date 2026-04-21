@@ -486,6 +486,49 @@ void SpecLICM::promoteMemToReg() {
 void SpecLICM::computeFrequentPath(Loop *L) {
   // PA5: Implement
   frequentPath.clear();
+  frequentPath.insert(header);  // header is member function of SpecLICM
+  BasicBlock *cur = header;
+
+  while (true) {
+    BasicBlock *next = nullptr;
+    TerminatorInst *ter = cur->getTerminator();
+    unsigned numSuccs = ter->getNumSuccessors();
+
+    if (numSuccs == 1) {
+      next = ter->getSuccessor(0);
+    }
+    else if (numSuccs > 1) {
+      for (unsigned i = 0 ; i < numSuccs ; i++) {
+        BasicBlock *succ = ter->getSuccessor(i);
+        if (bpi->isEdgeHot(cur, succ)) {
+          next = succ;
+          break;
+        }
+      }
+    }
+
+    if (!next) {
+      break;
+    }
+
+    // 1. Reaches the backedge: next == header
+    // 2. Leaves the current loop: !currLoop->contains(next)
+    // 3. Creates a cycle: already in frequentPath
+    bool isCycle = false;
+    for (auto *BB : frequentPath) {
+      if (BB == next) {
+        isCycle = true;
+        break;
+      }
+    }
+    if (next == header || !currLoop->contains(next) || isCycle) {
+      break;
+    }
+
+    // Otherwise, insert next into frequentPath, update cur to next
+    frequentPath.insert(next);
+    cur = next;
+  }
 }
 
 bool SpecLICM::anyConflictOnFrequentPath(LoadInst *ld) {
