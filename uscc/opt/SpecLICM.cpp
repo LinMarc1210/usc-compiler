@@ -282,7 +282,15 @@ bool SpecLICM::canHoistInst(Instruction *inst) {
 
 bool SpecLICM::guaranteedToExecute(Instruction *inst) {
   // PA5: Implement
-  return false;
+  SmallVector<BasicBlock*, 8> exitBB;
+  currLoop->getExitBlocks(exitBB);
+  for (auto *bb : exitBB) {
+    // if inst does not dominate exit bb
+    if (!domTree->dominates(inst->getParent(), bb)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void SpecLICM::specHoistInst(llvm::LoadInst *li) {
