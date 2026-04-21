@@ -399,6 +399,61 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
 
 void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
   // PA5: Implement
+  std::stack<Instruction*> st;
+  st.push(ld);
+
+  while (!st.empty()) {
+    Instruction *inst = st.top();
+    st.pop();
+
+    Instruction *dup = inst->clone();
+    dup->setName(inst->getName() + ".fixed");
+    dup->insertBefore(fixupBB->getTerminator());
+    for (unsigned i = 0 ; i < dup->getNumOperands() ; i++) {
+      // Update dup’ operands from the original instructions
+      // to the replicas in fixupBB
+      // Here, dup might use the values produced
+      // by the ld and its dependents (users)
+      Value* op = dup->getOperand(i);
+      dup->replaceAllUsesWith(op);
+    }
+
+    for (User *U : inst->users()) {
+      Instruction *user = dyn_cast<Instruction>(U);
+      // if user is in preheader
+      if (user->getParent() == preheader) {
+        st.push(user);
+      }
+    }
+
+    AllocaInst *ai = nullptr;
+
+    for (User *U : inst->users()) {
+      Instruction *user = dyn_cast<Instruction>(U);
+      if (user->getParent() != preheader && user->getParent() != fixupBB) {
+        if (!ai) {
+          ai = new AllocaInst(
+            inst->getType(), 
+            ConstantInt::get(Type::getInt32Ty(inst->getContext()), 1),
+            inst->getName() + ".addr", 
+            preheader->getTerminator()
+          );
+          aliasAI.push_back(ai);
+
+          // new StoreInst(inst, ai, "after inst")
+          new StoreInst(inst, ai, inst->getNextNode());
+          // new StoreInst(dup, ai, "terminator of fixupBB")
+          new StoreInst(dup, ai, fixupBB->getTerminator());
+        }
+
+        // li = new LoadInst(ai, "before user")
+        LoadInst *li = new LoadInst(ai, inst->getName() + ".ld", user);
+        insertedLds.insert(li);
+        user->replaceUsesOfWith(inst, li);  // Update user's dependency from inst to the new LoadInst li
+      }
+    }
+    
+  }
 }
 
 void SpecLICM::fixPhiNodes(BasicBlock *newHeader) {
