@@ -260,20 +260,18 @@ bool SpecLICM::canHoistInst(Instruction *inst) {
     Value* op = LI->getPointerOperand();
     uint64_t loadSize = dl->getTypeStoreSize(LI->getType());
     // not point to constant memory
-    if (!aa->pointsToConstantMemory(op)) {   
-      return false;
-    }
     // exists conflict
-    if (aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
+    if (!aa->pointsToConstantMemory(op) && 
+        aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
       return false;
     }
 
     return true;
   }
-  else if (isa<BinaryOperator>(inst) &&
-           isa<CastInst>(inst) &&
-           isa<SelectInst>(inst) &&
-           isa<GetElementPtrInst>(inst) &&
+  else if (isa<BinaryOperator>(inst) ||
+           isa<CastInst>(inst) ||
+           isa<SelectInst>(inst) ||
+           isa<GetElementPtrInst>(inst) ||
            isa<CmpInst>(inst)) {
             return true;
            }
