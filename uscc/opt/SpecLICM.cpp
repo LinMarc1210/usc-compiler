@@ -191,28 +191,35 @@ void SpecLICM::hoistRegion(DomTreeNode *startNode) {
 
   if (inCurrentLoop(bb)){
 
-    std::vector<Instruction*> InstList;
-    for (Instruction &inst : *bb) {    // copy inst in bb
-      InstList.push_back(&inst);
+    // only handle this loop level, not inner loop
+    // avoid revisit of nested loop
+    if (loopInfo->getLoopFor(bb) == currLoop) {
+
+      std::vector<Instruction*> InstList;
+      for (Instruction &inst : *bb) {    // copy inst in bb
+        InstList.push_back(&inst);
+      }
+
+      for (auto *currentInstr : InstList) {
+        if (currentInstr->getParent() != bb) {
+          continue; // if moved out of bb, just skip
+        }
+        if (isSafeToHoist(currentInstr)) {
+          if (canHoistInst(currentInstr)) {
+            hoistInst(currentInstr);
+          }
+          else if (enableSpecLICM && isa<LoadInst>(currentInstr)) {
+            LoadInst *LI = dyn_cast<LoadInst>(currentInstr);
+            if (!frequentPath.empty() && anyConflictOnFrequentPath(LI)) {
+              continue;
+            }
+            specHoistInst(LI);
+          }
+        }
+      }
+
     }
 
-    for (auto *currentInstr : InstList) {
-      if (currentInstr->getParent() != bb) {
-        continue; // if moved out of bb, just skip
-      }
-      if (isSafeToHoist(currentInstr)) {
-        if (canHoistInst(currentInstr)) {
-          hoistInst(currentInstr);
-        }
-        else if (enableSpecLICM && isa<LoadInst>(currentInstr)) {
-          LoadInst *LI = dyn_cast<LoadInst>(currentInstr);
-          if (!frequentPath.empty() && anyConflictOnFrequentPath(LI)) {
-            continue;
-          }
-          specHoistInst(LI);
-        }
-      }
-    }
   }
 
   std::vector<DomTreeNode*> children = startNode->getChildren();
@@ -309,6 +316,20 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
     BasicBlock *fixupBB = BasicBlock::Create(ctx, "alias.fixup", F, header);
     header->replaceAllUsesWith(newHeader);
 
+    TerminatorInst *TI = header->getTerminator();
+    for (unsigned i = 0; i < TI->getNumSuccessors(); ++i) {
+      BasicBlock *succ = TI->getSuccessor(i);
+      for (BasicBlock::iterator II = succ->begin(); isa<PHINode>(II); ++II) {
+        PHINode *PN = cast<PHINode>(II);
+        // if source of this PhiNode is mischanged as newHeader, change it back to header
+        for (unsigned j = 0; j < PN->getNumIncomingValues(); ++j) {
+          if (PN->getIncomingBlock(j) == newHeader) {
+            PN->setIncomingBlock(j, header);
+          }
+        }
+      }
+    }
+
     currLoop->addBasicBlockToLoop(newHeader, loopInfo->getBase());
     currLoop->addBasicBlockToLoop(fixupBB, loopInfo->getBase());
     currLoop->moveToHeader(newHeader);
@@ -336,14 +357,14 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
 
     LoadInst *aliasVal = new LoadInst(alias, "alias.ld", newHeader);
     // insertpoint, operator, op1, op2
-    ICmpInst *cmp = new ICmpInst(*newHeader, CmpInst::ICMP_EQ, aliasVal, constZero);
+    ICmpInst *cmp = new ICmpInst(*newHeader, CmpInst::ICMP_EQ, aliasVal, constZero, "neg.alias");
     BranchInst::Create(header, fixupBB, cmp, newHeader);  // if-true, if-false, cmp, branchpoint
 
 
     // (5) insert checking code after each store that may conflict with the input load
     AliasSet &AS = aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr);
     std::vector<Instruction*> targetSI;
-    std::stack<Instruction*> worklist;
+    std::queue<Instruction*> worklist;
     // identify Instructions in AliasSet
     for (auto I = AS.begin(), E = AS.end(); I != E; ++I) {
       Instruction *aliased = dyn_cast_or_null<Instruction>(I.getPointer());
@@ -351,9 +372,9 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
         worklist.push(inst);
       }
     }
-    // stack-based recursive traversal (DFS-like)
+    // queue-based recursive traversal (recursive-DFS-like)
     while (!worklist.empty()) {
-      Instruction *curr = worklist.top();
+      Instruction *curr = worklist.front();
       worklist.pop();
 
       if (isa<StoreInst>(curr)) {
@@ -406,7 +427,6 @@ void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
     st.pop();
 
     Instruction *dup = inst->clone();
-    dup->setName(inst->getName() + ".fixed");
     dup->insertBefore(fixupBB->getTerminator());
 
     instMapping[inst] = dup;
@@ -441,7 +461,7 @@ void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
           ai = new AllocaInst(
             inst->getType(), 
             ConstantInt::get(Type::getInt32Ty(inst->getContext()), 1),
-            inst->getName() + ".addr", 
+            inst->getName() + ".alloca", 
             preheader->getTerminator()
           );
           aliasAI.push_back(ai);
