@@ -223,7 +223,23 @@ void SpecLICM::hoistRegion(DomTreeNode *startNode) {
 
 bool SpecLICM::isSafeToHoist(llvm::Instruction *inst) {
   // PA5: Implement
-  return false;
+
+  // not have loop invariant operand ==> not safe
+  if (!currLoop->hasLoopInvariantOperands(inst)) {
+    return false;
+  }
+
+  // if it's recorded ==> not safe
+  if (insertedLds.count(inst)) {  // LLVM DenseSet can use count.
+    return false;
+  }
+
+  // neither can be safely speculatively executed nor guaranteed to be executed ==> not safe
+  if (!isSafeToSpeculativelyExecute(inst, dl) && !guaranteedToExecute(inst)) {
+    return false;
+  }
+
+  return true;
 }
 
 void SpecLICM::hoistInst(Instruction *inst) {
