@@ -197,7 +197,7 @@ void SpecLICM::hoistRegion(DomTreeNode *startNode) {
     }
 
     for (auto *currentInstr : InstList) {
-      if (std::find(InstList.begin(), InstList.end(), currentInstr) == InstList.end()) {
+      if (currentInstr->getParent() != bb) {
         continue; // if moved out of bb, just skip
       }
       if (isSafeToHoist(currentInstr)) {
@@ -374,7 +374,7 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
       
       Value *cmpConflict = new ICmpInst(SI, ICmpInst::ICMP_EQ, op, SI->getPointerOperand(), "alias.cmp");
       Instruction *I = SI->getNextNode();
-      if (inst)
+      if (I)
         new StoreInst(cmpConflict, alias, I);   // store to alias
       else
         new StoreInst(cmpConflict, alias, SI->getParent()->getTerminator());
@@ -398,6 +398,7 @@ void SpecLICM::specHoistInst(llvm::LoadInst *li) {
 void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
   // PA5: Implement
   std::stack<Instruction*> st;
+  DenseMap<Value*, Value*> instMapping;
   st.push(ld);
 
   while (!st.empty()) {
@@ -407,18 +408,24 @@ void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
     Instruction *dup = inst->clone();
     dup->setName(inst->getName() + ".fixed");
     dup->insertBefore(fixupBB->getTerminator());
+
+    instMapping[inst] = dup;
+
     for (unsigned i = 0 ; i < dup->getNumOperands() ; i++) {
       // Update dup’ operands from the original instructions
       // to the replicas in fixupBB
       // Here, dup might use the values produced
       // by the ld and its dependents (users)
       Value* op = dup->getOperand(i);
-      dup->replaceAllUsesWith(op);
+      if (instMapping.count(op)) {
+        dup->setOperand(i, instMapping[op]); 
+      }
     }
 
     for (User *U : inst->users()) {
       Instruction *user = dyn_cast<Instruction>(U);
       // if user is in preheader
+      if (!user) continue;
       if (user->getParent() == preheader) {
         st.push(user);
       }
@@ -426,7 +433,8 @@ void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
 
     AllocaInst *ai = nullptr;
 
-    for (User *U : inst->users()) {
+    SmallVector<User*, 8> userList(inst->users());
+    for (User *U : userList) {
       Instruction *user = dyn_cast<Instruction>(U);
       if (user->getParent() != preheader && user->getParent() != fixupBB) {
         if (!ai) {
@@ -484,8 +492,9 @@ void SpecLICM::promoteMemToReg() {
 void SpecLICM::computeFrequentPath(Loop *L) {
   // PA5: Implement
   frequentPath.clear();
-  frequentPath.insert(header);  // header is member function of SpecLICM
-  BasicBlock *cur = header;
+  BasicBlock *loopHeader = L->getHeader();
+  frequentPath.insert(loopHeader);
+  BasicBlock *cur = loopHeader;
 
   while (true) {
     BasicBlock *next = nullptr;
@@ -519,7 +528,7 @@ void SpecLICM::computeFrequentPath(Loop *L) {
         break;
       }
     }
-    if (next == header || !currLoop->contains(next) || isCycle) {
+    if (next == loopHeader || !currLoop->contains(next) || isCycle) {
       break;
     }
 
