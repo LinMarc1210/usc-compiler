@@ -476,6 +476,11 @@ void SpecLICM::fixPhiNodes(BasicBlock *newHeader) {
 
 void SpecLICM::promoteMemToReg() {
   // PA5: Implement
+  if (!aliasAI.empty()) {
+    Function *F = aliasAI.front()->getParent()->getParent();
+    domTree->recalculate(*F);   //  reconstruct the dominator tree of the input function fn
+    llvm::PromoteMemToReg(aliasAI, *domTree);
+  }
 }
 
 void SpecLICM::computeFrequentPath(Loop *L) {
