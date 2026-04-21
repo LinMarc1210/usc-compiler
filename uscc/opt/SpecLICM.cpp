@@ -244,10 +244,39 @@ bool SpecLICM::isSafeToHoist(llvm::Instruction *inst) {
 
 void SpecLICM::hoistInst(Instruction *inst) {
   // PA5: Implement
+  // move to right before preheader BB's terminator
+  inst->moveBefore(preheader->getTerminator());
+  changed = true;
 }
 
 bool SpecLICM::canHoistInst(Instruction *inst) {
   // PA5: Implement
+  if (LoadInst *LI = dyn_cast<LoadInst>(inst)) {
+    if (!LI->isUnordered()) {
+      return false;
+    }
+
+    Value* op = LI->getPointerOperand();
+    uint64_t loadSize = dl->getTypeStoreSize(LI->getType());
+    // not point to constant memory
+    if (!aa->pointsToConstantMemory(op)) {   
+      return false;
+    }
+    // exists conflict
+    if (aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
+      return false;
+    }
+
+    return true;
+  }
+  else if (isa<BinaryOperator>(inst) &&
+           isa<CastInst>(inst) &&
+           isa<SelectInst>(inst) &&
+           isa<GetElementPtrInst>(inst) &&
+           isa<CmpInst>(inst)) {
+            return true;
+           }
+
   return false;
 }
 
