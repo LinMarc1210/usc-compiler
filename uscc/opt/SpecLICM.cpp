@@ -15,6 +15,7 @@
 #include <llvm/Transforms/Utils/PromoteMemToReg.h>
 #include <queue>
 #include <vector>
+#include <stack>
 
 using namespace llvm;
 
@@ -296,6 +297,104 @@ bool SpecLICM::guaranteedToExecute(Instruction *inst) {
 void SpecLICM::specHoistInst(llvm::LoadInst *li) {
   assert(enableSpecLICM && "must enable SpecLICM");
   // PA5: Implement
+
+  auto &ctx = li->getContext();
+  Function *F = li->getParent()->getParent();
+  Value* op = li->getPointerOperand();
+  uint64_t loadSize = dl->getTypeStoreSize(li->getType());
+
+  // (1) create new control flow and header
+  // if conflict exists (memory addr is modified during loop)
+  // add alias.header & alias.fixup to monitor
+  if (aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
+    BasicBlock *newHeader = BasicBlock::Create(ctx, "alias.header", F, header);  // inserted before header of loop
+    BasicBlock *fixupBB = BasicBlock::Create(ctx, "alias.fixup", F, header);
+    header->replaceAllUsesWith(newHeader);
+
+    currLoop->addBasicBlockToLoop(newHeader, loopInfo->getBase());
+    currLoop->addBasicBlockToLoop(fixupBB, loopInfo->getBase());
+    currLoop->moveToHeader(newHeader);
+
+
+    // (2) fix PhiNodes and CFG
+    fixPhiNodes(newHeader);
+    BranchInst::Create(header, fixupBB);
+
+
+    // (3) Stack allocation for variable "alias"
+    AllocaInst *alias = new AllocaInst(
+      Type::getInt1Ty(ctx),
+      ConstantInt::get(Type::getInt32Ty(ctx), 1), 
+      "alias", 
+      preheader->getTerminator()
+    );
+    aliasAI.push_back(alias);    // for later use in PromoteMemToReg 
+
+
+    // (4) Use StoreInst, LoadInst to operate memory in stack
+    Value *constZero = Constant::getNullValue(Type::getInt1Ty(ctx));
+    new StoreInst(constZero, alias, preheader->getTerminator());
+    new StoreInst(constZero, alias, fixupBB->getTerminator());
+
+    LoadInst *aliasVal = new LoadInst(alias, "alias.ld", newHeader);
+    // insertpoint, operator, op1, op2
+    ICmpInst *cmp = new ICmpInst(*newHeader, CmpInst::ICMP_EQ, aliasVal, constZero);
+    BranchInst::Create(header, fixupBB, cmp, newHeader);  // if-true, if-false, cmp, branchpoint
+
+
+    // (5) insert checking code after each store that may conflict with the input load
+    AliasSet &AS = aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr);
+    std::vector<Instruction*> targetSI;
+    std::stack<Instruction*> worklist;
+    // identify Instructions in AliasSet
+    for (auto I = AS.begin(), E = AS.end(); I != E; ++I) {
+      Instruction *aliased = dyn_cast_or_null<Instruction>(I.getPointer());
+      if (Instruction *inst = dyn_cast<Instruction>(aliased)) {
+        worklist.push(inst);
+      }
+    }
+    // stack-based recursive traversal (DFS-like)
+    while (!worklist.empty()) {
+      Instruction *curr = worklist.top();
+      worklist.pop();
+
+      if (isa<StoreInst>(curr)) {
+        targetSI.push_back(curr);
+      }
+      else if (isa<GetElementPtrInst>(curr) || isa<IntToPtrInst>(curr) || isa<BitCastInst>(curr)) {
+        // track def-use chain
+        for (User *U : curr->users()) {
+          if (Instruction *UI = dyn_cast<Instruction>(U)) {
+            worklist.push(UI);
+          }
+        }
+      }
+    }
+    // icmp BEFORE the store, store-to-alias AFTER the store
+    for (auto *inst : targetSI) {
+      StoreInst *SI = dyn_cast<StoreInst>(inst);
+      
+      Value *cmpConflict = new ICmpInst(SI, ICmpInst::ICMP_EQ, op, SI->getPointerOperand(), "alias.cmp");
+      Instruction *I = SI->getNextNode();
+      if (inst)
+        new StoreInst(cmpConflict, alias, I);   // store to alias
+      else
+        new StoreInst(cmpConflict, alias, SI->getParent()->getTerminator());
+    }
+
+
+    // (6) execute actual hoisting of code
+    hoistInst(li);
+    if (currLoop->getParentLoop() == nullptr) {  // i.e.  current loop is not nested inside another loop
+      std::vector<Instruction*> depChain;
+      depChain = collectDependentChain(li);
+      for (Instruction *depInst : depChain) {
+        depInst->moveBefore(preheader->getTerminator());
+      }
+    }
+    this->header = newHeader;
+    fillFixupBlocks(li, fixupBB);
+  }
 }
 
 void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
