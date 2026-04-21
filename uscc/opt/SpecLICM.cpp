@@ -458,6 +458,20 @@ void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
 
 void SpecLICM::fixPhiNodes(BasicBlock *newHeader) {
   // PA5: Implement
+  BasicBlock::iterator insertPos = newHeader->getFirstNonPHI();
+
+  for (BasicBlock::iterator it = header->begin() ; it != header->end() ; ) {
+    Instruction *i = &*it;
+    ++it;    // before changing, iterate next position first
+    if (PHINode *pn = dyn_cast<PHINode>(i)) {
+      pn->removeFromParent();
+      newHeader->getInstList().insert(insertPos, pn);   // insertPos, Instruction*
+    }
+    else {
+      // PHInode must be in top of BB
+      break;
+    }
+  }
 }
 
 void SpecLICM::promoteMemToReg() {
