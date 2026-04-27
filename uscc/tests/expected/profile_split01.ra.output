@@ -1,0 +1,11 @@
+********** USCC REGISTER ALLOCATION **********
+********** Function: main
+Found neighbors = 2 for %vreg6 [320r,420r:0)  0@320r
+Removal: %vreg6 [320r,420r:0)  0@320r
+Found neighbors = 1 for %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Removal: %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Found neighbors = 2 for %vreg11 [48r,64B:1)[64B,208r:0)[208r,304B:2)[304B,424r:0)  0@64B-phi 1@48r 2@208r
+Removal: %vreg11 [48r,64B:1)[64B,208r:0)[208r,304B:2)[304B,424r:0)  0@64B-phi 1@48r 2@208r
+Assigning to physical register RSI: %vreg11 [48r,64B:1)[64B,208r:0)[208r,304B:2)[304B,424r:0)  0@64B-phi 1@48r 2@208r
+Assigning to physical register RAX: %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Assigning to physical register RDI: %vreg6 [320r,420r:0)  0@320r

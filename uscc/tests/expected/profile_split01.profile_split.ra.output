@@ -1,0 +1,20 @@
+********** USCC PROFILE-SPLIT REGISTER ALLOCATION **********
+********** Function: main
+coalesce (Rule3): %vreg10 at join BB#1
+coalesce (Rule3): %vreg11 at join BB#1
+coalesce (Rule3): %vreg10 at join BB#2
+coalesce (Rule3): %vreg11 at join BB#2
+keep split (Rule3): %vreg11 at join BB#3
+deploy: split %vreg11 at BB#3 -> %vreg14
+Found neighbors = 2 for %vreg6 [320r,420r:0)  0@320r
+Removal: %vreg6 [320r,420r:0)  0@320r
+Found neighbors = 2 for %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Removal: %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Found neighbors = 1 for %vreg11 [48r,64B:0)[64B,208r:2)[208r,304B:1)  0@48r 1@208r 2@64B-phi
+Removal: %vreg11 [48r,64B:0)[64B,208r:2)[208r,304B:1)  0@48r 1@208r 2@64B-phi
+Found neighbors = 2 for %vreg14 [120r,160B:0)[304B,424r:0)  0@120r
+Removal: %vreg14 [120r,160B:0)[304B,424r:0)  0@120r
+Assigning to physical register RSI: %vreg14 [120r,160B:0)[304B,424r:0)  0@120r
+Assigning to physical register RAX: %vreg11 [48r,64B:0)[64B,208r:2)[208r,304B:1)  0@48r 1@208r 2@64B-phi
+Assigning to physical register RCX: %vreg10 [16r,64B:1)[64B,240r:0)[240r,304B:2)  0@64B-phi 1@16r 2@240r
+Assigning to physical register RDI: %vreg6 [320r,420r:0)  0@320r

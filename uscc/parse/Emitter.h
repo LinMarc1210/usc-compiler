@@ -86,7 +86,8 @@ public:
     void printCode(Parser& parser) noexcept;
 	void writeBitcode(const char* fileName) noexcept;
 	bool verify() noexcept;
-	bool writeAsm(const char* fileName) noexcept;
+	bool writeAsm(const char* fileName, bool profileSplitMode = false,
+	              const std::string &profilePath = "") noexcept;
 	void edgeProfile() noexcept;
 	void edgeProfileNaive() noexcept;
 	void edgeProfileOpt() noexcept;

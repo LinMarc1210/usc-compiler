@@ -1,0 +1,32 @@
+********** USCC PROFILE-SPLIT REGISTER ALLOCATION **********
+********** Function: main
+coalesce (Rule3): %vreg17 at join BB#1
+coalesce (Rule3): %vreg18 at join BB#1
+coalesce (Rule3): %vreg17 at join BB#2
+coalesce (Rule3): %vreg18 at join BB#2
+keep split (Rule3): %vreg18 at join BB#3
+coalesce (Rule3): %vreg17 at join BB#4
+coalesce (Rule3): %vreg18 at join BB#4
+keep split (Rule3): %vreg17 at join BB#5
+keep split (Rule3): %vreg18 at join BB#5
+deploy: split %vreg18 at BB#3 -> %vreg19
+deploy: split %vreg17 at BB#5 -> %vreg20
+deploy: split %vreg18 at BB#5 -> %vreg21
+Found neighbors = 2 for %vreg8 [224r,324r:0)  0@224r
+Removal: %vreg8 [224r,324r:0)  0@224r
+Found neighbors = 4 for %vreg17 [16r,64B:0)[64B,208B:2)[400B,464r:2)[464r,528B:1)[528B,656B:2)  0@16r 1@464r 2@64B-phi
+Removal: %vreg17 [16r,64B:0)[64B,208B:2)[400B,464r:2)[464r,528B:1)[528B,656B:2)  0@16r 1@464r 2@64B-phi
+Found neighbors = 3 for %vreg18 [48r,64B:0)[64B,208B:2)[400B,432r:2)[432r,528B:1)[528B,656B:2)  0@48r 1@432r 2@64B-phi
+Removal: %vreg18 [48r,64B:0)[64B,208B:2)[400B,432r:2)[432r,528B:1)[528B,656B:2)  0@48r 1@432r 2@64B-phi
+Found neighbors = 2 for %vreg19 [120r,160B:0)[208B,328r:0)  0@120r
+Removal: %vreg19 [120r,160B:0)[208B,328r:0)  0@120r
+Found neighbors = 1 for %vreg20 [168r,208B:1)[528B,592r:1)[592r,592d:0)  0@592r 1@168r
+Removal: %vreg20 [168r,208B:1)[528B,592r:1)[592r,592d:0)  0@592r 1@168r
+Found neighbors = 0 for %vreg21 [172r,208B:1)[528B,560r:1)[560r,560d:0)  0@560r 1@172r
+Removal: %vreg21 [172r,208B:1)[528B,560r:1)[560r,560d:0)  0@560r 1@172r
+Assigning to physical register EAX: %vreg21 [172r,208B:1)[528B,560r:1)[560r,560d:0)  0@560r 1@172r
+Assigning to physical register ECX: %vreg20 [168r,208B:1)[528B,592r:1)[592r,592d:0)  0@592r 1@168r
+Assigning to physical register ESI: %vreg19 [120r,160B:0)[208B,328r:0)  0@120r
+Assigning to physical register EDX: %vreg18 [48r,64B:0)[64B,208B:2)[400B,432r:2)[432r,528B:1)[528B,656B:2)  0@48r 1@432r 2@64B-phi
+Assigning to physical register EDI: %vreg17 [16r,64B:0)[64B,208B:2)[400B,464r:2)[464r,528B:1)[528B,656B:2)  0@16r 1@464r 2@64B-phi
+Assigning to physical register RDI: %vreg8 [224r,324r:0)  0@224r

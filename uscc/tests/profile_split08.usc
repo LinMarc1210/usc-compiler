@@ -1,0 +1,57 @@
+// profile_split08.usc
+// Hot loop with cold-initialized accumulators and a switch-like
+// cascade of if/else checks. The cascade creates multiple
+// intra-hot joins that Rule 3 should coalesce, while the outer
+// entry->header split stays.
+// Expected output: 2400
+int main()
+{
+	int a;
+	int b;
+	int c;
+	int d;
+	int i;
+	int mod;
+	int sum;
+
+	// cold
+	a = 7;
+	b = 11;
+	c = 13;
+	d = 17;
+
+	sum = 0;
+	i = 0;
+
+	// hot: cascading if/else dispatches to one of four accumulators
+	while (i < 200)
+	{
+		mod = i - ((i / 4) * 4);
+		if (mod == 0)
+		{
+			sum = sum + a;
+		}
+		else
+		{
+			if (mod == 1)
+			{
+				sum = sum + b;
+			}
+			else
+			{
+				if (mod == 2)
+				{
+					sum = sum + c;
+				}
+				else
+				{
+					sum = sum + d;
+				}
+			}
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

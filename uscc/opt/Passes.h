@@ -181,4 +181,6 @@ namespace llvm
     FunctionPass* createRedundantPhiRemovalPass();
 	FunctionPass* createCopyPropagationPass();
     LoopPass* createSpecLICMPass();
+    FunctionPass* createUSCCRegisterAllocator();
+    FunctionPass* createUSCCRegisterAllocatorProfileSplit();
 }

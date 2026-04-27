@@ -1,0 +1,44 @@
+// profile_split01.usc
+// Hot/cold splitting showcase: 8 variables are initialized in a cold
+// prologue and then all used inside a hot loop. Under baseline
+// Chaitin, at least one variable spills; its loads land in the hot
+// loop body. Under -profile-split, the cold->hot boundary is kept as a
+// split (Rule 3) so the spill cost concentrates in the cold entry,
+// and the hot loop body stays register-resident.
+// Expected output: 102850
+int main()
+{
+	int a;
+	int b;
+	int c;
+	int d;
+	int e;
+	int f;
+	int g;
+	int h;
+	int i;
+	int sum;
+
+	// cold: pressure-peak prologue
+	a = 17;
+	b = 31;
+	c = 42;
+	d = 7;
+	e = 3;
+	f = 5;
+	g = 11;
+	h = 13;
+
+	i = 0;
+	sum = 0;
+
+	// hot: inner loop that touches every cold-defined variable
+	while (i < 100)
+	{
+		sum = sum + a * b + c * d + e * f + g * h + i;
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}
