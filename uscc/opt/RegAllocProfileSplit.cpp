@@ -440,6 +440,63 @@ unsigned RAUSCCProfileSplit::NumSaturationPoints(LiveInterval *sr) {
 void RAUSCCProfileSplit::splitAllLiveRanges() {
 	insertedEdges.clear();
 	// PA6: Implement
+	// PURPOSE: enumerate candidate split edges and save them in insertedEdges for the later coalescing stage
+	
+	// Collect all vreg intervals.
+	std::vector<LiveInterval *> vregs;
+	for (unsigned i = 0; i < MRI->getNumVirtRegs(); ++i) {    // MRI is from class MachineRegisterInfo
+		unsigned reg = TargetRegisterInfo::index2VirtReg(i);
+		if (MRI->reg_nodbg_empty(reg)) continue;    // skip debug register 
+		vregs.push_back(&LIS->getInterval(reg));
+	}
+
+	// Separate join and fork block into 2 loops to match test case order
+
+	// 1. join block
+	for (MachineBasicBlock &MBB : *MF) {
+		if (MBB.pred_size() >= 2) {
+			// calculate max predecessor frequency
+			uint64_t maxFreq = 0;
+			for (auto *pred : MBB.predecessors()) {
+				maxFreq = std::max(maxFreq, execCount[pred]);
+			}
+			
+			// create one SubrangeEdge for every non-debug virtual register whose live interval is live-in to B
+			for (auto *LI : vregs) {    // LiveInterval *
+				if (LIS->isLiveInToMBB(*LI, &MBB)) {
+					SubrangeEdge e = SubrangeEdge{
+						.origReg=LI->reg, 
+						.BB_dst=&MBB, 
+						.newReg=0, // 0 for the not-yet-created new register
+						.maxPredFreq=maxFreq
+					};
+					insertedEdges.push_back(e);
+				}
+			}
+		}
+	}
+
+
+	// 2. fork block
+	for (MachineBasicBlock &MBB : *MF) {
+		if (MBB.succ_size() >= 2) {
+			for (auto *succ : MBB.successors()) {
+				if (succ->pred_size() < 2) {    // prevents double enumeration
+					for (auto *LI : vregs) {
+						if (LIS->isLiveInToMBB(*LI, succ)) {
+							SubrangeEdge e = SubrangeEdge{
+								.origReg=LI->reg, 
+								.BB_dst=succ, 
+								.newReg=0, // 0 for the not-yet-created new register
+								.maxPredFreq=execCount[&MBB]  // MBB's frequency is simply fork point's predFreq
+							};
+							insertedEdges.push_back(e);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 // ======================================================================
@@ -633,6 +690,83 @@ bool RAUSCCProfileSplit::Rule3_frequencyRatio(const SubrangeEdge &e) {
 // ======================================================================
 void RAUSCCProfileSplit::deploySplits() {
 	// PA6: Implement
+	// PURPOSE: commits those surviving split decisions to the machine function.
+
+	// rebuild LiveIntervals for the affected virtual registers 
+	std::set<unsigned> affectedRegs;
+	
+	for (auto &e : insertedEdges) {    // Surviving SubrangeEdge
+		if (MRI->reg_nodbg_empty(e.origReg)) {     //  skip if register e.origReg is debug-empty
+			continue;
+		}
+
+		const TargetRegisterClass *rc = MRI->getRegClass(e.origReg);
+		unsigned newReg = MRI->createVirtualRegister(rc);    // build new vreg in same class (rc)
+		e.newReg = newReg;   // newReg is the new vreg's number
+
+		// record both the original and new registers as affected live ranges 
+		// so that their liveness information can be rebuilt later in one bulk pass
+		affectedRegs.insert(e.origReg);
+		affectedRegs.insert(e.newReg);
+
+		for (MachineBasicBlock *pred : (e.BB_dst)->predecessors()) {
+			// insert a machine-level copy instruction that transfers the value from e.origReg to e.newReg 
+			// before the predecessor’s terminator
+
+			/* MachineInstrBuilder llvm::BuildMI(MachineBasicBlock &BB,
+                                  MachineBasicBlock::iterator I,
+                                  const DebugLoc &DL, const MCInstrDesc &MCID,
+                                  bool IsIndirect, Register Reg,
+                                  const MDNode *Variable, const MDNode *Expr)
+			*/
+			const TargetInstrInfo &TII = *MF->getTarget().getInstrInfo();
+			MachineInstr *MI = BuildMI(
+				*pred, 
+				pred->getFirstTerminator(), 
+				DebugLoc(),
+				TII.get(TargetOpcode::COPY), 
+				newReg
+			).addReg(e.origReg);
+
+			// register instruction with LiveIntervals
+			LIS->InsertMachineInstrInMaps(MI);
+		}
+
+
+		// rewrite register operands in machine instructions whose parent basic blocks are dominated by e.BB dst
+		MachineDominatorTree *MDT = &getAnalysis<MachineDominatorTree>();
+		for (auto &MBB : *MF) {
+			if (MDT->dominates(e.BB_dst, &MBB)) {
+				for (auto &MI : MBB) {
+					for (auto &op : MI.operands()) {
+						if (op.isReg() && op.getReg() == e.origReg) {
+							op.setReg(e.newReg);
+						}
+					}
+				}
+			}
+		}
+
+		// debug message for each surviving split
+		llvm::errs() << "deploy: split %vreg" 
+					 << TargetRegisterInfo::virtReg2Index(e.origReg) 
+					 << " at BB#" 
+					 << e.BB_dst->getNumber() 
+					 << " -> %vreg" 
+					 << TargetRegisterInfo::virtReg2Index(e.newReg)
+					 << "\n";
+	}
+
+
+	// rebuild LiveIntervals for the affected virtual registers 
+	for (auto &reg : affectedRegs) {
+		if (LIS->hasInterval(reg)) {
+			LIS->removeInterval(reg);
+		}
+		if (!MRI->reg_empty(reg)) {
+			LIS->createAndComputeVirtRegInterval(reg);
+		}
+	}
 }
 
 // ======================================================================
