@@ -1,0 +1,7 @@
+; ModuleID = 'main'
+
+define void @foo(i32 %x) {
+entry:
+  %div = sdiv i32 0, 3
+  ret void
+}

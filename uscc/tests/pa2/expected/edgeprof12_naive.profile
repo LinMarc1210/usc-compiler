@@ -12,9 +12,9 @@ while.body3 -> if.else : 224985000
 while.end4 -> while.cond : 15000
 if.then -> if.end : 15000
 if.end -> while.cond1 : 225000000
-if.else -> if.then10 : 112492500
-if.else -> if.else12 : 112492500
-if.then10 -> if.end11 : 112492500
-if.end11 -> if.end : 224985000
-if.else12 -> if.end11 : 112492500
+if.else -> if.then6 : 112492500
+if.else -> if.else8 : 112492500
+if.then6 -> if.end7 : 112492500
+if.end7 -> if.end : 224985000
+if.else8 -> if.end7 : 112492500
 END_PROFILE

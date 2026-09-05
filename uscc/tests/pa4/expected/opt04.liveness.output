@@ -1,0 +1,23 @@
+********** Live-in/Live-out information **********
+********** Function: main, analysis iterates 1 times
+entry:
+  IN:
+  OUT:
+while.cond:
+  IN:
+  OUT:
+while.body:
+  IN:
+  OUT:
+while.end:
+  IN:
+  OUT:
+if.then:
+  IN:
+  OUT:
+if.end:
+  IN:
+  OUT:
+if.else:
+  IN:
+  OUT:

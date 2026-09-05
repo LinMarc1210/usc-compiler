@@ -1,0 +1,18 @@
+; ModuleID = 'main'
+
+define i32 @bar(i32 %j) {
+entry:
+  %mul = mul i32 4, %j
+  %gt = icmp sgt i32 %j, %j
+  br i1 %gt, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %add = add i32 %j, 1
+  %mul1 = mul i32 4, %add
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  %Phi = phi i32 [ %add, %if.then ], [ %j, %entry ]
+  %mul2 = mul i32 4, %Phi
+  ret i32 %mul2
+}
