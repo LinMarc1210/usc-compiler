@@ -35,6 +35,10 @@
 
 using namespace uscc;
 
+extern bool enableLiveness;
+extern bool enableAE;
+extern bool enableCSE;
+
 int main(int argc, const char * argv[])
 {
 	ez::ezOptionParser opt;
@@ -99,6 +103,11 @@ int main(int argc, const char * argv[])
 	opt.add("", false, 0, 0,
 			"Enable Natural Loop Detection",
 			"--natural-loop");
+
+	opt.add("", false, 0, 0, "Enable liveness analysis", "-liveness");
+	opt.add("", false, 0, 0, "Enable Dead Code Elimination", "-dce");
+	opt.add("", false, 0, 0, "Enable available expression analysis", "-ae");
+	opt.add("", false, 0, 0, "Enable Common Subexpression Elimination (CSE)", "-cse");
 
 	opt.parse(argc, argv);
 	if (opt.isSet("-h"))
@@ -178,6 +187,27 @@ int main(int argc, const char * argv[])
         // Don't enable for -O flag to avoid interfering with instcombine
         bool ASTOptimized = PeelingEnabled;
 		parse::Emitter emit(parser, ASTOptimized, PeelingEnabled);
+
+		enableLiveness = opt.isSet("-liveness");
+		if (enableLiveness) {
+			emit.doLiveness();
+			return 0;
+		} else if (opt.isSet("-dce")) {
+			emit.registerAnalysis();
+			emit.doDCE();
+		}
+
+		enableAE = opt.isSet("-ae");
+		enableCSE = opt.isSet("-cse");
+		if (enableAE)
+		{
+			emit.doAE();
+		}
+		else if (enableCSE)
+		{
+			emit.registerAnalysis();
+			emit.doCSE();
+		}
 
 		// Check if we should run optimization passes
 		if (opt.isSet("-O"))

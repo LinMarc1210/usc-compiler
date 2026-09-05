@@ -1,0 +1,38 @@
+********** Available Expressions Information **********
+********** Function: main, analysis iterates 12 times
+entry:
+  GEN: [0:   %mul = mul i32 %a, %c]
+  KILL: [1:   %lt = icmp slt i32 %i, 2] [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0] [4:   %mul14 = mul i32 %a13, %c12] [5:   %mul10 = mul i32 %a9, %c8] [6:   %add = add i32 %i11, 1] [7:   %mul7 = mul i32 %a6, %c5]
+  IN:
+  OUT: [0:   %mul = mul i32 %a, %c]
+while.cond:
+  GEN: [1:   %lt = icmp slt i32 %i, 2]
+  KILL:
+  IN:
+  OUT: [1:   %lt = icmp slt i32 %i, 2]
+while.body:
+  GEN: [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0]
+  KILL:
+  IN: [1:   %lt = icmp slt i32 %i, 2]
+  OUT: [1:   %lt = icmp slt i32 %i, 2] [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0]
+while.end:
+  GEN: [4:   %mul14 = mul i32 %a13, %c12]
+  KILL:
+  IN: [1:   %lt = icmp slt i32 %i, 2]
+  OUT: [1:   %lt = icmp slt i32 %i, 2] [4:   %mul14 = mul i32 %a13, %c12]
+if.then:
+  GEN: [5:   %mul10 = mul i32 %a9, %c8]
+  KILL:
+  IN: [1:   %lt = icmp slt i32 %i, 2] [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0]
+  OUT: [1:   %lt = icmp slt i32 %i, 2] [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0] [5:   %mul10 = mul i32 %a9, %c8]
+if.end:
+  GEN:
+  KILL: [1:   %lt = icmp slt i32 %i, 2] [3:   %eq = icmp eq i32 %i4, 0] [6:   %add = add i32 %i11, 1]
+  IN: [1:   %lt = icmp slt i32 %i, 2] [3:   %eq = icmp eq i32 %i4, 0]
+  OUT:
+if.else:
+  GEN: [7:   %mul7 = mul i32 %a6, %c5]
+  KILL: [0:   %mul = mul i32 %a, %c] [2:   %mul3 = mul i32 %a2, %c1] [4:   %mul14 = mul i32 %a13, %c12] [5:   %mul10 = mul i32 %a9, %c8]
+  IN: [1:   %lt = icmp slt i32 %i, 2] [2:   %mul3 = mul i32 %a2, %c1] [3:   %eq = icmp eq i32 %i4, 0]
+  OUT: [1:   %lt = icmp slt i32 %i, 2] [3:   %eq = icmp eq i32 %i4, 0] [7:   %mul7 = mul i32 %a6, %c5]
+

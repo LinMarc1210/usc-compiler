@@ -175,7 +175,7 @@ AST_EMIT(ASTArraySub)
 	Value* addr = mIdent.readFrom(ctx);
 
 	// GEP from the array address
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 	return build.CreateInBoundsGEP(addr, arrayIdx);
 }
 
@@ -210,7 +210,7 @@ AST_EMIT(ASTLogicalAnd)
 
 	// Add the branch to the end of the LHS
 	{
-		IRBuilder<true, NoFolder> build(ctx.mBlock);
+		IRBuilder<> build(ctx.mBlock);
 		// We can assume it WILL be an i32 here
 		// since it'd have been zero-extended otherwise
 		lhsVal = build.CreateICmpNE(lhsVal, ctx.mZero, "tobool");
@@ -229,7 +229,7 @@ AST_EMIT(ASTLogicalAnd)
 
 	// Add the branch and the end of the RHS
 	{
-		IRBuilder<true, NoFolder> build(ctx.mBlock);
+		IRBuilder<> build(ctx.mBlock);
 		rhsVal = build.CreateICmpNE(rhsVal, ctx.mZero, "tobool");
 
 		// We do an unconditional branch because the phi mode will handle
@@ -242,7 +242,7 @@ AST_EMIT(ASTLogicalAnd)
 
 	ctx.mBlock = endBlock;
 
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 
 	// Figure out the value to zext
 	Value* zextVal = nullptr;
@@ -285,7 +285,7 @@ AST_EMIT(ASTLogicalOr)
 
 	// Add the branch to the end of the LHS
 	{
-		IRBuilder<true, NoFolder> build(ctx.mBlock);
+		IRBuilder<> build(ctx.mBlock);
 		// We can assume it WILL be an i32 here
 		// since it'd have been zero-extended otherwise
 		lhsVal = build.CreateICmpNE(lhsVal, ctx.mZero, "tobool");
@@ -304,7 +304,7 @@ AST_EMIT(ASTLogicalOr)
 
 	// Add the branch and the end of the RHS
 	{
-		IRBuilder<true, NoFolder> build(ctx.mBlock);
+		IRBuilder<> build(ctx.mBlock);
 		rhsVal = build.CreateICmpNE(rhsVal, ctx.mZero, "tobool");
 
 		// We do an unconditional branch because the phi mode will handle
@@ -317,7 +317,7 @@ AST_EMIT(ASTLogicalOr)
 
 	ctx.mBlock = endBlock;
 
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 
 	// Figure out the value to zext
 	Value* zextVal = nullptr;
@@ -343,7 +343,7 @@ AST_EMIT(ASTBinaryCmpOp)
 {
 	Value* retVal = nullptr;
 
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     Value * rhs = mRHS->emitIR(ctx);
     Value * lhs = mLHS->emitIR(ctx);
     switch (mOp)
@@ -372,7 +372,7 @@ AST_EMIT(ASTBinaryMathOp)
 {
 	Value* retVal = nullptr;
 
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     Value * rhs = mRHS->emitIR(ctx);
     Value * lhs = mLHS->emitIR(ctx);
     switch (mOp)
@@ -405,7 +405,7 @@ AST_EMIT(ASTNotExpr)
 {
 	Value* retVal = nullptr;
 
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
 	auto value = mExpr->emitIR(ctx);
     value = builder.CreateICmpEQ(value, ctx.mZero);
     retVal = builder.CreateZExt(value, llvm::Type::getInt32Ty(ctx.mGlobal));
@@ -441,7 +441,7 @@ AST_EMIT(ASTArrayExpr)
 	// Generate the array subscript, which'll give us the address
 	Value* addr = mArray->emitIR(ctx);
 
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 	// Now load this value and return
 
 	// NOTE: This still needs to be a load because arrays are in memory
@@ -464,7 +464,7 @@ AST_EMIT(ASTFuncExpr)
 		{
 			if (argValue->getType()->getPointerElementType()->isArrayTy())
 			{
-				IRBuilder<true, NoFolder> build(ctx.mBlock);
+				IRBuilder<> build(ctx.mBlock);
 				std::vector<llvm::Value*> gepIdx;
 				gepIdx.push_back(ctx.mZero);
 				gepIdx.push_back(ctx.mZero);
@@ -473,7 +473,7 @@ AST_EMIT(ASTFuncExpr)
 			}
 			else
 			{
-				IRBuilder<true, NoFolder> build(ctx.mBlock);
+				IRBuilder<> build(ctx.mBlock);
 				// Need to return the address of the specific index in question
 				// So need a GEP
 				argValue = build.CreateInBoundsGEP(argValue, ctx.mZero);
@@ -486,7 +486,7 @@ AST_EMIT(ASTFuncExpr)
 	// Now call the function, and return it
 	Value* retVal = nullptr;
 
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 	if (mType != Type::Void)
 	{
 		retVal = build.CreateCall(mIdent.getAddress(), callList, "call");
@@ -503,7 +503,7 @@ AST_EMIT(ASTIncExpr)
 {
 	Value* retVal = nullptr;
 
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     auto value = mIdent.readFrom(ctx);
     value = builder.CreateAdd(value, ConstantInt::get(value->getType(), 1), "inc"); // use the same type as value
     mIdent.writeTo(ctx, value);
@@ -516,7 +516,7 @@ AST_EMIT(ASTDecExpr)
 {
 	Value* retVal = nullptr;
 
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     auto value = mIdent.readFrom(ctx);
     value = builder.CreateSub(value, ConstantInt::get(value->getType(), 1), "dec");
     mIdent.writeTo(ctx, value);
@@ -533,14 +533,14 @@ AST_EMIT(ASTAddrOfArray)
 AST_EMIT(ASTToIntExpr)
 {
 	Value* exprVal = mExpr->emitIR(ctx);
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 	return build.CreateSExt(exprVal, llvm::Type::getInt32Ty(ctx.mGlobal), "conv");
 }
 
 AST_EMIT(ASTToCharExpr)
 {
 	Value* exprVal = mExpr->emitIR(ctx);
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 	return build.CreateTrunc(exprVal, llvm::Type::getInt8Ty(ctx.mGlobal), "conv");
 }
 
@@ -552,7 +552,7 @@ AST_EMIT(ASTDecl)
 	{
 		Value* declExpr = mExpr->emitIR(ctx);
 
-		IRBuilder<true, NoFolder> build(ctx.mBlock);
+		IRBuilder<> build(ctx.mBlock);
 		// If this is a string, we have to memcpy
 		if (declExpr->getType()->isPointerTy())
 		{
@@ -610,7 +610,7 @@ AST_EMIT(ASTAssignArrayStmt)
 	// Generate the array subscript, which'll give us the address
 	Value* addr = mArray->emitIR(ctx);
 
-	IRBuilder<true, NoFolder> build(ctx.mBlock);
+	IRBuilder<> build(ctx.mBlock);
 
 	// NOTE: This is still a create store because arrays are always stack-allocated
 	build.CreateStore(exprVal, addr);
@@ -621,7 +621,7 @@ AST_EMIT(ASTAssignArrayStmt)
 AST_EMIT(ASTIfStmt)
 {
     auto value = this->mExpr->emitIR(ctx);
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     if (!value->getType()->isIntegerTy(1))
         value = builder.CreateICmpNE(value, ctx.mZero);
 
@@ -637,7 +637,7 @@ AST_EMIT(ASTIfStmt)
         // New fix for break & continue statement
         if (!ctx.mBlock->getTerminator())
         {
-            IRBuilder<true, NoFolder> builderElse(ctx.mBlock);
+            IRBuilder<> builderElse(ctx.mBlock);
             builderElse.CreateBr(end);
         }
     }
@@ -648,7 +648,7 @@ AST_EMIT(ASTIfStmt)
     mThenStmt->emitIR(ctx);
     if (!ctx.mBlock->getTerminator())
     {
-        IRBuilder<true, NoFolder> builderThen(ctx.mBlock);
+        IRBuilder<> builderThen(ctx.mBlock);
         builderThen.CreateBr(end);
     }
 
@@ -667,12 +667,12 @@ AST_EMIT(ASTWhileStmt)
     else {
       auto condBlock = BasicBlock::Create(ctx.mGlobal, "while.cond", ctx.mFunc);
 
-      IRBuilder<true, NoFolder> builder(ctx.mBlock);
+      IRBuilder<> builder(ctx.mBlock);
       builder.CreateBr(condBlock); // unconditional branch in predecessor
 
       ctx.mBlock = condBlock;
       auto value = this->mExpr->emitIR(ctx);
-      IRBuilder<true, NoFolder> builderCond(ctx.mBlock);
+      IRBuilder<> builderCond(ctx.mBlock);
       if (!value->getType()->isIntegerTy(1))
           value = builderCond.CreateICmpNE(value, ctx.mZero);
 
@@ -692,7 +692,7 @@ AST_EMIT(ASTWhileStmt)
       ctx.mContinueBlocks.pop();
       ctx.mBreakBlocks.pop();
 
-      IRBuilder<true, NoFolder> builderBody(ctx.mBlock);
+      IRBuilder<> builderBody(ctx.mBlock);
       builderBody.CreateBr(condBlock);
       ctx.mBlock = endBlock;
     }
@@ -702,7 +702,7 @@ AST_EMIT(ASTWhileStmt)
 
 AST_EMIT(ASTReturnStmt)
 {
-	IRBuilder<true, NoFolder> builder(ctx.mBlock);
+	IRBuilder<> builder(ctx.mBlock);
     if (mExpr)
         builder.CreateRet(mExpr->emitIR(ctx));
     else
@@ -730,7 +730,7 @@ AST_EMIT(ASTBreakStmt)
     llvm::BasicBlock* breakTarget = ctx.mBreakBlocks.top();
 
     // Create an unconditional branch to that target
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     builder.CreateBr(breakTarget);
 	return nullptr;
 }
@@ -741,7 +741,7 @@ AST_EMIT(ASTContinueStmt)
     llvm::BasicBlock* continueTarget = ctx.mContinueBlocks.top();
 
     // Create an unconditional branch to that target
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     builder.CreateBr(continueTarget);
 	return nullptr;
 }
@@ -758,12 +758,12 @@ AST_EMIT(ASTForStmt)
     minitStmt->emitIR(ctx);
 
     // Unconditionally jump into the condition check to start the loop
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     builder.CreateBr(condBlock);
 
     // 3. Populate the for.cond block
     ctx.mBlock = condBlock;
-    IRBuilder<true, NoFolder> condBuilder(ctx.mBlock);
+    IRBuilder<> condBuilder(ctx.mBlock);
 
     auto condValue = this->mcondExpr->emitIR(ctx);
 
@@ -788,7 +788,7 @@ AST_EMIT(ASTForStmt)
     ctx.mContinueBlocks.pop();
 
     // After the body, unconditionally jump to the step block
-    IRBuilder<true, NoFolder> bodyBuilder(ctx.mBlock);
+    IRBuilder<> bodyBuilder(ctx.mBlock);
     bodyBuilder.CreateBr(stepBlock);
 
     // 5. Populate the for.step block
@@ -797,7 +797,7 @@ AST_EMIT(ASTForStmt)
     mstepStmt->emitIR(ctx);
 
     // After the step, unconditionally jump back to the condition check
-    IRBuilder<true, NoFolder> stepBuilder(ctx.mBlock);
+    IRBuilder<> stepBuilder(ctx.mBlock);
     stepBuilder.CreateBr(condBlock);
 
     // 6. Set the end block as the new insertion point for subsequent code
@@ -814,7 +814,7 @@ AST_EMIT(ASTDoWhileStmt)
     llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx.mGlobal, "dowhile.end", ctx.mFunc);
 
     // 2. Unconditionally jump from the preheader into the body
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     builder.CreateBr(bodyBlock);
 
     // 3. Populate the dowhile.body block
@@ -832,12 +832,12 @@ AST_EMIT(ASTDoWhileStmt)
     ctx.mBreakBlocks.pop();
 
     // After the body, unconditionally jump to the condition check
-    IRBuilder<true, NoFolder> bodyBuilder(ctx.mBlock);
+    IRBuilder<> bodyBuilder(ctx.mBlock);
     bodyBuilder.CreateBr(condBlock);
 
     // 4. Populate the dowhile.cond block
     ctx.mBlock = condBlock;
-    IRBuilder<true, NoFolder> condBuilder(ctx.mBlock);
+    IRBuilder<> condBuilder(ctx.mBlock);
 
     llvm::Value* condValue = mExpr->emitIR(ctx);
 
@@ -887,7 +887,7 @@ AST_EMIT(ASTSwitchStmt)
     }
 
     // 3. Create the main 'switch' instruction
-    IRBuilder<true, NoFolder> builder(ctx.mBlock);
+    IRBuilder<> builder(ctx.mBlock);
     llvm::SwitchInst* switchInst = builder.CreateSwitch(switchValue, defaultBlock, case_default_stmts.size());
 
     // 4. Add each 'case' as a destination to the switch instruction
@@ -920,7 +920,7 @@ AST_EMIT(ASTSwitchStmt)
 
         if (!ctx.mBlock->getTerminator())
         {
-            IRBuilder<true, NoFolder> fallthroughBuilder(ctx.mBlock);
+            IRBuilder<> fallthroughBuilder(ctx.mBlock);
             llvm::BasicBlock* nextBlock = defaultBlock;
             if (i + 1 < case_default_stmts.size())
             {

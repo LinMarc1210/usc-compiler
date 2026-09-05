@@ -1,0 +1,33 @@
+********** Available Expressions Information **********
+********** Function: main, analysis iterates 9 times
+entry:
+  GEN:
+  KILL: [0:   %lt = icmp slt i32 %i, 10] [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5] [3:   %add8 = add i32 %a7, %b6] [4:   %add3 = add i32 %b2, 1] [5:   %add5 = add i32 %i4, 1]
+  IN:
+  OUT:
+while.cond:
+  GEN: [0:   %lt = icmp slt i32 %i, 10]
+  KILL:
+  IN:
+  OUT: [0:   %lt = icmp slt i32 %i, 10]
+while.body:
+  GEN: [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5]
+  KILL:
+  IN: [0:   %lt = icmp slt i32 %i, 10]
+  OUT: [0:   %lt = icmp slt i32 %i, 10] [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5]
+while.end:
+  GEN: [3:   %add8 = add i32 %a7, %b6]
+  KILL:
+  IN: [0:   %lt = icmp slt i32 %i, 10]
+  OUT: [0:   %lt = icmp slt i32 %i, 10] [3:   %add8 = add i32 %a7, %b6]
+if.then:
+  GEN:
+  KILL: [1:   %add = add i32 %a, %b] [3:   %add8 = add i32 %a7, %b6]
+  IN: [0:   %lt = icmp slt i32 %i, 10] [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5]
+  OUT: [0:   %lt = icmp slt i32 %i, 10] [2:   %eq = icmp eq i32 %i1, 5]
+if.end:
+  GEN:
+  KILL: [0:   %lt = icmp slt i32 %i, 10] [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5] [3:   %add8 = add i32 %a7, %b6] [4:   %add3 = add i32 %b2, 1] [5:   %add5 = add i32 %i4, 1]
+  IN: [0:   %lt = icmp slt i32 %i, 10] [1:   %add = add i32 %a, %b] [2:   %eq = icmp eq i32 %i1, 5]
+  OUT:
+

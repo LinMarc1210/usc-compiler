@@ -90,6 +90,11 @@ public:
 	void edgeProfileNaive() noexcept;
 	void edgeProfileOpt() noexcept;
 	void enableNaturalLoop() noexcept;
+	void registerAnalysis();
+	void doDCE();
+	void doLiveness();
+	void doAE();
+	void doCSE();
 private:
 	CodeContext mContext;
 };

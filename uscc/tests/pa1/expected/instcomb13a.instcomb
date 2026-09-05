@@ -6,23 +6,23 @@ declare i32 @printf(i8*, ...)
 
 define i32 @foo(i32 %x) {
 entry:
-  %0 = alloca i32
-  %1 = alloca i32
-  %2 = alloca i32
-  store i32 %x, i32* %2
-  %3 = load i32* %2
-  %gt = icmp sgt i32 %3, 0
+  %z.addr = alloca i32
+  %y.addr = alloca i32
+  %x.addr = alloca i32
+  store i32 %x, i32* %x.addr
+  %x1 = load i32* %x.addr
+  %gt = icmp sgt i32 %x1, 0
   br i1 %gt, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  %4 = load i32* %2
-  %mul = mul i32 %4, 3
-  store i32 %mul, i32* %1
-  %5 = load i32* %1
-  %6 = mul i32 %4, 15
-  store i32 %6, i32* %0
-  %7 = load i32* %0
-  ret i32 %7
+  %x2 = load i32* %x.addr
+  %mul = mul i32 %x2, 3
+  store i32 %mul, i32* %y.addr
+  %y = load i32* %y.addr
+  %0 = mul i32 %x2, 15
+  store i32 %0, i32* %z.addr
+  %z = load i32* %z.addr
+  ret i32 %z
 
 if.end:                                           ; preds = %entry
   ret i32 0
@@ -30,8 +30,7 @@ if.end:                                           ; preds = %entry
 
 define i32 @main() {
 entry:
-  %0 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
   %call = call i32 @foo(i32 7)
-  %1 = call i32 (i8*, ...)* @printf(i8* %0, i32 %call)
+  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i32 0, i32 0), i32 %call)
   ret i32 0
 }
