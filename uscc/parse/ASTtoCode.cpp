@@ -20,13 +20,15 @@ using std::shared_ptr;
 }
 
 ASTTOCODE(ASTProgram)
-	for (auto func : mFuncs)
-	{
-		func->ASTtoCode(output, depth);
-	}
+    // PA1: Implement
+    // output << "Program:" << std::endl;
+    for (auto& func : mFuncs) {  // member name is from ASTNodes.h class ASTProgram
+        func->ASTtoCode(output, depth + 1);
+    }
 }
 
 ASTTOCODE(ASTFunction) // "Function: "
+    // PA1: Implement
 	switch (mReturnType)
 	{
 		case Type::Void:
@@ -39,31 +41,24 @@ ASTTOCODE(ASTFunction) // "Function: "
 			output << "char ";
 			break;
 		default:
-			output <<  "Shouldn't have gotten here. ";
+			output << "Shouldn't have gotten here. ";
 			break;
 	}
-	output << mIdent.getName();
-	output << "(";
 
-    int i = 1;
+	output << mIdent.getName() << " (";
 	for (auto arg : mArgs)
 	{
-		arg->ASTtoCode(output, depth);
-        if (i != mArgs.size())
-            output << ", ";
-        i++;
+		arg->ASTtoCode(output, depth + 1);
 	}
-
-    output << ")" << std::endl;
-    output << "{" << std::endl;
-	
-	mBody->ASTtoCode(output, depth+1); // CompoundStmt
-
-    output << "}" << std::endl;
+	output << ") {" << std::endl;
+	mBody->ASTtoCode(output, depth + 1);
+	output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTArgDecl) // "ArgDecl: "
-	switch (mIdent.getType())
+    // PA1: Implement
+    OUTS();
+    switch (mIdent.getType())
 	{
 		case Type::Void:
 			output << "void ";
@@ -84,14 +79,11 @@ ASTTOCODE(ASTArgDecl) // "ArgDecl: "
 			output << "Shouldn't have gotten here...";
 			break;
 	}
-	output << mIdent.getName();
+	output << mIdent.getName() << std::endl;
 }
 
 ASTTOCODE(ASTArraySub) // "ArraySub: "
-	output << mIdent.getName();
-    output << "[";
-	mExpr->ASTtoCode(output, depth);
-    output << "]";
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTBadExpr) // "BadExpr:"
@@ -99,323 +91,294 @@ ASTTOCODE(ASTBadExpr) // "BadExpr:"
 }
 
 ASTTOCODE(ASTLogicalAnd)
-	mLHS->ASTtoCode(output, depth);
-    output << " && ";
-	mRHS->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTLogicalOr)
-	mLHS->ASTtoCode(output, depth);
-    output << " || ";
-	mRHS->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTBinaryCmpOp)
-	mLHS->ASTtoCode(output, depth);
-    output <<  " " << Token::Values[mOp] << " ";
-	mRHS->ASTtoCode(output, depth);
+    // PA1: Implement
+    mLHS->ASTtoCode(output, depth);
+    output << " " << Token::Values[mOp] << " ";
+    mRHS->ASTtoCode(output, depth);
 }
 
 ASTTOCODE(ASTBinaryMathOp)
-	mLHS->ASTtoCode(output, depth);
-	output << " " << Token::Values[mOp] << " ";
-	mRHS->ASTtoCode(output, depth);
+    // PA1: Implement
+    mLHS->ASTtoCode(output, depth);
+    output << " " << Token::Values[mOp] << " ";
+    mRHS->ASTtoCode(output, depth);
 }
 
 ASTTOCODE(ASTNotExpr)
-	output << "!(";
-	mExpr->ASTtoCode(output, depth);
-	output << ")";
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTConstantExpr)
-    output << mValue;
+    // PA1: Implement
+	output << mValue;
 }
 
 ASTTOCODE(ASTStringExpr)
-    std::string msg = mString->getText();
-
-    std::string newmsg;
-    if (msg.substr(msg.length() - 1) == "\n") {
-        newmsg = msg.substr(0,msg.length() - 1) + "\\n";
-        output << "\"" << newmsg << "\"";
-    }
-    else {
-        output << "\"" << mString->getText() << "\"";
-    }
+    // PA1: Implement
+    output << "\"" << mString->getText() << "\\n\"";
 }
 
 ASTTOCODE(ASTIdentExpr) // IdentExpr:
-	output << mIdent.getName();
+    // PA1: Implement
+    output << mIdent.getName();
 }
 
 ASTTOCODE(ASTArrayExpr) // "ArrayExpr: "
-	mArray->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTFuncExpr) // "FuncExpr: "
-    output << mIdent.getName() << "(";
-    int i = 1;
-	for (auto arg : mArgs)
-	{
-		arg->ASTtoCode(output, depth);
-        if (i != mArgs.size())
+    // PA1: Implement
+    OUTS();
+    output << mIdent.getName() << " (";
+    int count = 0;
+    for (auto arg : mArgs)
+    {
+        arg->ASTtoCode(output, depth + 1);
+        if (count < mArgs.size() - 1) {
             output << ", ";
-        i++;
-	}
-    output << ")";
+        }
+        count++;
+    }
+    output << ")" << ";" << std::endl;
 }
 
 ASTTOCODE(ASTIncExpr) // "IncExpr: "
-	output << "++" << mIdent.getName();
+    // PA1: Implement
+    if (depth >= 0) {
+        OUTS();
+        output << "++" << mIdent.getName();
+        output << ";";
+    }
+    else {
+        output << "++" << mIdent.getName();
+    }
 }
 
 ASTTOCODE(ASTDecExpr) // "DecExpr: "
-	output << "--" << mIdent.getName();
+    // PA1: Implement
+    if (depth >= 0) {
+        OUTS();
+        output << "--" << mIdent.getName();
+        output << ";" << std::endl;
+    }
+    else {
+        output << "--" << mIdent.getName();
+    }
 }
 
 ASTTOCODE(ASTAddrOfArray) // "AddrOfArray: "
-	output << "&";
-	mArray->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 			
 ASTTOCODE(ASTToIntExpr) // "ToIntExpr: "
-	mExpr->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 			
 ASTTOCODE(ASTToCharExpr) // ToCharExpr: "
-	mExpr->ASTtoCode(output, depth);
+    // PA1: Implement
 }
 
 // Declaration
 ASTTOCODE(ASTDecl) // "Decl: "
-    OUTS()
-	switch (mIdent.getType())
+    // PA1: Implement
+    OUTS();
+    switch(mIdent.getType())
 	{
 		case Type::Void:
-			output << "void " << mIdent.getName();
+			output << "void ";
 			break;
 		case Type::Int:
-			output << "int " << mIdent.getName();
+			output << "int ";
 			break;
 		case Type::Char:
-			output << "char " << mIdent.getName();
+			output << "char ";
 			break;
 		case Type::IntArray:
-			output << "int " << mIdent.getName() << "[" << mIdent.getArrayCount() << "]";
+			output << "int[" << mIdent.getArrayCount() << "]";
 			break;
 		case Type::CharArray:
-			output << "char " << mIdent.getName() << "[" << mIdent.getArrayCount() << "]";
+			output << "char[" << mIdent.getArrayCount() << "]";
 			break;
 		default:
 			output << "Shouldn't have gotten here...";
 			break;
 	}
-	if (mExpr)
-	{
+	output << mIdent.getName();
+
+    if (mExpr)
+    {
         output << " = ";
-		mExpr->ASTtoCode(output, depth);
-	}
+        mExpr->ASTtoCode(output, depth + 1);
+    }
     output << ";" << std::endl;
 }
 
 // Statements
 ASTTOCODE(ASTCompoundStmt) // CompoundStmt:"
+    // PA1: Implement
 	for (auto decl : mDecls)
 	{
-		decl->ASTtoCode(output, depth); // ASTDecl
+		decl->ASTtoCode(output, depth + 1);
 	}
-    // ASTStmt (ASTCompoundStmt, ASTAssignStmt, ASTAssignArrayStmt, ASTIfStmt, ASTWhileStmt, ASTReturnStmt, ASTExprStmt, ASTNullStmt)
 	for (auto stmt : mStmts)
 	{
-        if (stmt) {
-            if (std::dynamic_pointer_cast<ASTIfStmt>(stmt)) {
-                OUTS()
-            }
-		    stmt->ASTtoCode(output, depth);
-        }
+		stmt->ASTtoCode(output, depth + 1);
 	}
 }
 
 ASTTOCODE(ASTReturnStmt) // "ReturnStmt:
-    OUTS()
+    // PA1: Implement
+    OUTS();
 	if (!mExpr)
 	{
-        output << "return;" << std::endl;
+		output << "return;" << std::endl;
 	}
 	else
 	{
-        output << "return ";
-		mExpr->ASTtoCode(output, depth);
-        output << ";" << std::endl;
+		output << "return ";
+		mExpr->ASTtoCode(output, depth + 1);
+		output << ";" << std::endl;
 	}
 }
 
 ASTTOCODE(ASTAssignStmt) // "AssignStmt: "
-    OUTS()
-	output << mIdent.getName() << " = ";
-	mExpr->ASTtoCode(output, depth);
+    // PA1: Implement
+    OUTS();
+    output << mIdent.getName();
+    output << " = ";
+    mExpr->ASTtoCode(output, depth + 1);
     output << ";" << std::endl;
 }
 
 ASTTOCODE(ASTAssignArrayStmt) // "AssignArrayStmt:"
-    OUTS()
-	mArray->ASTtoCode(output, depth); // ASTArraySub
-    output << " = ";
-	mExpr->ASTtoCode(output, depth);
-    output << ";" << std::endl;
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTIfStmt) // "IfStmt: "
-    /* OUTS() */
-	output << "if (";
-	mExpr->ASTtoCode(output, depth);
-	output << ")" << std::endl;
-    OUTS()
-	output << "{" << std::endl;
-
-    // ASTStmt (ASTCompoundStmt, ASTAssignStmt, ASTAssignArrayStmt, ASTIfStmt, ASTWhileStmt, ASTReturnStmt, ASTExprStmt, ASTNullStmt)
-	mThenStmt->ASTtoCode(output, depth + 1); // ASTStmt
-    OUTS()
-	output << "}" << std::endl;
-	if (mElseStmt)
-	{
-        if (std::dynamic_pointer_cast<ASTIfStmt>(mElseStmt)) {
-            OUTS()
-	        output << "else ";
-		    mElseStmt->ASTtoCode(output, depth);
-        }
-        else {
-            OUTS()
-	        output << "else" << std::endl;
-            OUTS()
-	        output << "{" << std::endl;
-		    mElseStmt->ASTtoCode(output, depth + 1);
-            OUTS()
-	        output << "}" << std::endl;
-        }
-	}
+    // PA1: Implement
+    OUTS();
+    output << "if (";
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ") {" << std::endl;
+    mThenStmt->ASTtoCode(output, depth + 2);
+    if (mElseStmt)
+    {
+        OUTS();
+        output << "} else {" << std::endl;
+        mElseStmt->ASTtoCode(output, depth + 2);
+    }
+    OUTS();
+    output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTWhileStmt) // "WhileStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "while (";
-	mExpr->ASTtoCode(output, depth);
-    output << ")" << std::endl;
-    OUTS()
-    output << "{" << std::endl;
-	mLoopStmt->ASTtoCode(output, depth + 1);
-    OUTS()
+    mExpr->ASTtoCode(output, depth + 1);
+    output << ") {" << std::endl;
+    mLoopStmt->ASTtoCode(output, depth + 2);
+    OUTS();
     output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTExprStmt) // "ExprStmt"
-    if (mExpr) {
-        OUTS()
-	    mExpr->ASTtoCode(output, depth + 1);
-        output << ";" << std::endl;
+    // PA1: Implement
+    if (depth >= 0) {
+        mExpr->ASTtoCode(output, depth + 1);
+    }
+    else {
+        mExpr->ASTtoCode(output, -1);
     }
 }
 
 ASTTOCODE(ASTNullStmt) // "NullStmt"
-    OUTS()
-	output << ";" << std::endl;
+    // PA1: Implement
 }
 
 ASTTOCODE(ASTBreakStmt) // "BreakStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "break;" << std::endl;
 }
 
 ASTTOCODE(ASTContinueStmt) // "ContinueStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "continue;" << std::endl;
 }
 
 ASTTOCODE(ASTForStmt) // "ForStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "for (";
-
-    // Print init statement (assignment or expression)
-    if (minitStmt) {
-        if (auto assignStmt = std::dynamic_pointer_cast<ASTAssignStmt>(minitStmt)) {
-            output << assignStmt->getIdent().getName() << " = ";
-            assignStmt->getExpr()->ASTtoCode(output, 0);
-        } else if (auto exprStmt = std::dynamic_pointer_cast<ASTExprStmt>(minitStmt)) {
-            if (exprStmt->getExpr()) {
-                exprStmt->getExpr()->ASTtoCode(output, 0);
-            }
-        }
-    }
+    minitStmt->ASTtoCode(output, depth + 1);
+    mcondExpr->ASTtoCode(output, depth + 1);
     output << "; ";
-
-    // Print condition expression
-    if (mcondExpr) {
-        if (auto exprStmt = std::dynamic_pointer_cast<ASTExprStmt>(mcondExpr)) {
-            if (exprStmt->getExpr()) {
-                exprStmt->getExpr()->ASTtoCode(output, 0);
-            }
-        }
-    }
-    output << "; ";
-
-    // Print step expression
-    if (mstepStmt) {
-        if (auto exprStmt = std::dynamic_pointer_cast<ASTExprStmt>(mstepStmt)) {
-            if (exprStmt->getExpr()) {
-                exprStmt->getExpr()->ASTtoCode(output, 0);
-            }
-        }
-    }
-    output << ")" << std::endl;
-
-    OUTS()
-    output << "{" << std::endl;
-    mbodyStmt->ASTtoCode(output, depth + 1);
-    OUTS()
+    mstepStmt->ASTtoCode(output, -1);   // avoid extra semicolon
+    output << ") {" << std::endl;
+    mbodyStmt->ASTtoCode(output, depth + 2);
+    OUTS();
     output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTDoWhileStmt) // "DoWhileStmt"
-    OUTS()
-    output << "do" << std::endl;
-    OUTS()
-    output << "{" << std::endl;
-    mLoopStmt->ASTtoCode(output, depth + 1);
-    OUTS()
+    // PA1: Implement
+    OUTS();
+    output << "do {" << std::endl;
+    mLoopStmt->ASTtoCode(output, depth + 2);
+    OUTS();
     output << "} while (";
-    mExpr->ASTtoCode(output, depth);
+    mExpr->ASTtoCode(output, depth + 1);
     output << ");" << std::endl;
 }
 
 ASTTOCODE(ASTSwitchStmt) // "SwitchStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "switch (";
-    mExpr->ASTtoCode(output, depth);
+    mExpr->ASTtoCode(output, depth + 1);
     output << ")" << std::endl;
-    OUTS()
+    OUTS();
     output << "{" << std::endl;
-    for (auto stmt : case_default_stmts)
+    for (auto& stmt : case_default_stmts)
     {
-        stmt->ASTtoCode(output, depth + 1);
+        if (auto caseStmt = std::dynamic_pointer_cast<ASTCaseStmt>(stmt)) {
+            caseStmt->ASTtoCode(output, depth + 1);
+        }
+        else if (auto defaultStmt = std::dynamic_pointer_cast<ASTDefaultStmt>(stmt)){
+            defaultStmt->ASTtoCode(output, depth + 1);
+        }
     }
-    OUTS()
+    OUTS();
     output << "}" << std::endl;
 }
 
 ASTTOCODE(ASTCaseStmt) // "CaseStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "case ";
-    mExpr->ASTtoCode(output, depth);
+    mExpr->ASTtoCode(output, depth + 1);
     output << ":" << std::endl;
+
     for (auto stmt : mStmts)
-    {
-        stmt->ASTtoCode(output, depth + 1);
-    }
+	{
+		stmt->ASTtoCode(output, depth + 1);
+	}
 }
 
 ASTTOCODE(ASTDefaultStmt) // "DefaultStmt"
-    OUTS()
+    // PA1: Implement
+    OUTS();
     output << "default:" << std::endl;
     for (auto stmt : mStmts)
     {
