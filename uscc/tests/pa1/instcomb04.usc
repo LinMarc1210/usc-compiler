@@ -1,0 +1,14 @@
+// instcomb04.usc
+// Part 1: Constant Folding - More Division and Modulo
+// Tests: sdiv C1, C2; srem C1, C2
+// Expected: Constants folded at compile time
+//---------------------------------------------------------
+
+int main()
+{
+	int a = 20 / 4;
+	int b = 17 % 5;
+	int c = 100 / 10;
+	printf("%d %d %d\n", a, b, c);
+	return 0;
+}

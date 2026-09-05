@@ -1,0 +1,2 @@
+Back Edge: while.cond <--- if.end
+The size is 4, Natural Loop: if.end if.then while.body while.cond 

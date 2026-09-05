@@ -1,0 +1,55 @@
+Program:
+---Function: int main
+------CompoundStmt:
+---------Decl: int x
+------------ConstantExpr: 0
+---------Decl: int sum
+------------ConstantExpr: 0
+---------WhileStmt
+------------BinaryCmp <:
+---------------IdentExpr: x
+---------------ConstantExpr: 10
+------------CompoundStmt:
+---------------AssignStmt: x
+------------------BinaryMath +:
+---------------------IdentExpr: x
+---------------------ConstantExpr: 1
+---------------IfStmt: 
+------------------BinaryCmp ==:
+---------------------IdentExpr: x
+---------------------ConstantExpr: 2
+------------------ThenStmt: 
+---------------------CompoundStmt:
+------------------------ContinueStmt
+---------------IfStmt: 
+------------------BinaryCmp ==:
+---------------------IdentExpr: x
+---------------------ConstantExpr: 7
+------------------ThenStmt: 
+---------------------CompoundStmt:
+------------------------BreakStmt
+---------------AssignStmt: sum
+------------------BinaryMath +:
+---------------------IdentExpr: sum
+---------------------IdentExpr: x
+---------ReturnStmt:
+------------IdentExpr: sum
+int main()
+{
+    int x = 0;
+    int sum = 0;
+    while (x < 10)
+    {
+        x = x + 1;
+        if (x == 2)
+        {
+            continue;
+        }
+        if (x == 7)
+        {
+            break;
+        }
+        sum = sum + x;
+    }
+    return sum;
+}

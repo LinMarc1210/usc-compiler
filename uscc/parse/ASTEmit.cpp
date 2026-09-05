@@ -1168,48 +1168,68 @@ void ASTWhileStmt::RemovePreHeader(CodeContext& ctx) {
 
 
 void ASTWhileStmt::emitIR_LoopPeeling(CodeContext& ctx) {
+  // PA1: Implement
+  // Follow 6 steps in PA1 description.
+  // Please refer to the 1st-loop-iteration peeling section 
 
-  // 2) Replicate the current basic block (preheader)
-  auto replicated_preheader_1 = replicate_basicblock(ctx);
-  auto replicated_preheader_2 = replicate_basicblock(ctx);
+  // Step 1: replicate 2 copies of current basic block (mm)
+  BasicBlock* preheaderCondNo = replicate_basicblock(ctx);
+  BasicBlock* preheaderCondYes = replicate_basicblock(ctx);
+  
 
-  // 3) Empty the existing preheader before appending the predicate
+  // Step 2: remove content of mblock 
   RemovePreHeader(ctx);
+  
 
-  // 4) Append the predicate(fliter) and install the edges to the replicated_preheader_1 and the replicated_preheader_2
+  // Step 3: create a conditional branch instruction at the end of the mblock 
+  //         to connect the two copies of the preheader
   auto value = this->mExpr->emitIR(ctx);
-  IRBuilder<> builderCond(ctx.mBlock);
+  IRBuilder<true, NoFolder> builder(ctx.mBlock);
   if (!value->getType()->isIntegerTy(1))
-    value = builderCond.CreateICmpNE(value, ctx.mZero);
-  builderCond.CreateCondBr(value, replicated_preheader_1, replicated_preheader_2);
+      value = builder.CreateICmpNE(value, ctx.mZero);
 
-  // 5) If the condition is held: Merge the replicated preheader with the 1st peeled body
-  ctx.mBlock = replicated_preheader_1;
+  builder.CreateCondBr(value, preheaderCondYes, preheaderCondNo); // conditional branch in while.cond
+
+
+  // Step 4: append IR for the 1st loop body iteration
+  auto condBlock = BasicBlock::Create(ctx.mGlobal, "while.cond", ctx.mFunc);
+  ctx.mBlock = preheaderCondYes;
   this->mLoopStmt->emitIR(ctx);
+  IRBuilder<true, NoFolder> builderFirstBody(ctx.mBlock);
+  builderFirstBody.CreateBr(condBlock); // unconditional branch in while.cond
 
-  auto rest_header = BasicBlock::Create(ctx.mGlobal, "while.rest_header", ctx.mFunc);
-  IRBuilder<> builderPeeled(ctx.mBlock);
-  builderPeeled.CreateBr(rest_header);
 
-  // 6) header - rest_body (loop body for the rest of iterations) - end
-  ctx.mBlock = rest_header;
-  auto value2 = this->mExpr->emitIR(ctx);
-  IRBuilder<> builderHeader(ctx.mBlock);
-  if (!value2->getType()->isIntegerTy(1))
-    value2 = builderHeader.CreateICmpNE(value2, ctx.mZero);
-  auto rest_body = BasicBlock::Create(ctx.mGlobal, "while.rest_body", ctx.mFunc);
-  auto end = BasicBlock::Create(ctx.mGlobal, "while.end", ctx.mFunc);
-  builderHeader.CreateCondBr(value2, rest_body, end);
+  // Step 5: IR lowering for remaining loop body iterations
+  //         and unconditional branch to the while.end
+  auto body = BasicBlock::Create(ctx.mGlobal, "while.body", ctx.mFunc);
+  auto endBlock = BasicBlock::Create(ctx.mGlobal, "while.end", ctx.mFunc);
+  ctx.mBlock = condBlock;
 
-  ctx.mBlock = rest_body;
+  // set Condition for while.cond
+  auto valueRemain = this->mExpr->emitIR(ctx);
+  IRBuilder<true, NoFolder> builderCond(ctx.mBlock);
+  if (!valueRemain->getType()->isIntegerTy(1))
+      valueRemain = builderCond.CreateICmpNE(valueRemain, ctx.mZero);
+  builderCond.CreateCondBr(valueRemain, body, endBlock);
+  
+  ctx.mBlock = body;
+  // Push the continue/break targets
+  ctx.mContinueBlocks.push(condBlock);
+  ctx.mBreakBlocks.push(endBlock);
+  // Emit remaining loop body iterations
   this->mLoopStmt->emitIR(ctx);
-  IRBuilder<> builderBody(ctx.mBlock);
-  builderBody.CreateBr(rest_header);
+  // Pop the continue/break targets
+  ctx.mContinueBlocks.pop();
+  ctx.mBreakBlocks.pop();
 
-  // 7) If the condition is not held: just fall to end block
-  ctx.mBlock = replicated_preheader_2;
-  IRBuilder<> builderPeeled_2(ctx.mBlock);
-  builderPeeled_2.CreateBr(end);
+  IRBuilder<true, NoFolder> builderBody(ctx.mBlock);
+  builderBody.CreateBr(condBlock);
 
-  ctx.mBlock = end;
+
+  // Step 6: unconditional branch to while.end
+  ctx.mBlock = preheaderCondNo;
+  IRBuilder<true, NoFolder> builderEnd(ctx.mBlock);
+  builderEnd.CreateBr(endBlock);
+
+  ctx.mBlock = endBlock;
 }

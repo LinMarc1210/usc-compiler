@@ -1,0 +1,24 @@
+// instcomb12a.usc
+// Part 3: Reassociation - Addition (Store in if.then)
+// Tests: (add (add x, C1), C2) -> add x, (C1+C2)
+// Expected: (x + 3) + 5 -> x + 8
+// Scenario: Store y in IF.THEN block only, load y in same block (no PHI needed)
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	int y;
+	int z;
+	if (x > 0) {
+		y = x + 3;
+		z = y + 5;
+		return z;
+	}
+	return 0;
+}
+
+int main()
+{
+	printf("%d\n", foo(10));
+	return 0;
+}

@@ -1,0 +1,91 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @optimize_all(i32 %x, i32 %y) {
+entry:
+  %0 = alloca i32
+  %1 = alloca i32
+  store i32 %x, i32* %1
+  %2 = alloca i32
+  %3 = alloca i32
+  store i32 %y, i32* %3
+  %4 = alloca i32
+  %5 = alloca i32
+  %6 = alloca i32
+  %7 = alloca i32
+  %8 = alloca i32
+  %9 = alloca i32
+  %10 = alloca i32
+  %11 = alloca i32
+  %12 = alloca i32
+  %13 = alloca i32
+  %14 = alloca i32
+  store i32 42, i32* %4
+  store i32 20, i32* %7
+  %15 = load i32* %1
+  store i32 %15, i32* %9
+  %16 = load i32* %3
+  store i32 %16, i32* %10
+  %17 = load i32* %1
+  store i32 %17, i32* %11
+  %18 = load i32* %3
+  store i32 0, i32* %12
+  %19 = load i32* %1
+  %20 = shl i32 %19, 2
+  store i32 %20, i32* %2
+  %21 = load i32* %3
+  %22 = shl i32 %21, 3
+  store i32 %22, i32* %6
+  %23 = load i32* %1
+  %add5 = add i32 %23, 2
+  %24 = add i32 %23, 5
+  store i32 %24, i32* %8
+  %25 = load i32* %3
+  %26 = shl i32 %25, 1
+  %27 = shl i32 %26, 2
+  store i32 %27, i32* %13
+  %28 = load i32* %1
+  store i32 %28, i32* %14
+  %29 = load i32* %3
+  store i32 %29, i32* %0
+  %30 = load i32* %1
+  %31 = load i32* %1
+  store i32 0, i32* %5
+  %32 = load i32* %5
+  %33 = load i32* %0
+  %34 = load i32* %14
+  %35 = load i32* %13
+  %36 = load i32* %8
+  %37 = load i32* %6
+  %38 = load i32* %2
+  %39 = load i32* %12
+  %40 = load i32* %11
+  %41 = load i32* %10
+  %42 = load i32* %9
+  %43 = load i32* %7
+  %44 = load i32* %4
+  %add12 = add i32 %44, %43
+  %add13 = add i32 %add12, %42
+  %add14 = add i32 %add13, %41
+  %add15 = add i32 %add14, %40
+  %add16 = add i32 %add15, %39
+  %add17 = add i32 %add16, %38
+  %add18 = add i32 %add17, %37
+  %add19 = add i32 %add18, %36
+  %add20 = add i32 %add19, %35
+  %add21 = add i32 %add20, %34
+  %add22 = add i32 %add21, %33
+  %add23 = add i32 %add22, %32
+  ret i32 %add23
+}
+
+define i32 @main() {
+entry:
+  %0 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %call = call i32 @optimize_all(i32 5, i32 3)
+  %1 = call i32 (i8*, ...)* @printf(i8* %0, i32 %call)
+  ret i32 0
+}
