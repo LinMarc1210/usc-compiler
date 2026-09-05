@@ -12,7 +12,7 @@ import sys
 import re
 
 import unittest
-uscc = "../bin/uscc"
+uscc = "../../bin/uscc"
 ae = "-ae"
 cse = "-cse"
 
