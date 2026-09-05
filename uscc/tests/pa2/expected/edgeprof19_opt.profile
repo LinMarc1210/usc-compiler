@@ -1,7 +1,7 @@
 === OPTIMIZED EDGE PROFILING (MST) ===
 EDGE_PROFILE: main
-SPANNING_TREE: entry -> while.cond, while.cond -> while.body, while.cond -> while.end, while.body -> if.then, while.body -> if.else, if.then -> if.then2, if.then -> if.else4, if.end -> if.then16, if.else -> if.end, if.then2 -> if.then7, if.end3 -> if.end, if.end8 -> if.end3, if.else9 -> if.end8, if.then12 -> if.end13, if.end13 -> if.end8, if.else14 -> if.end13, if.then16 -> if.then21, if.then16 -> if.else23, if.end17 -> if.then35, if.end17 -> if.else37, if.else18 -> if.end17, if.then21 -> if.then26, if.end22 -> if.end17, if.then26 -> if.then31, if.then26 -> if.else33, if.end27 -> if.end22, if.else28 -> if.end27, if.end32 -> if.end27, if.then35 -> if.then39, if.then35 -> if.else41, if.end36 -> while.cond, if.else37 -> if.end36, if.then39 -> if.then43, if.end40 -> if.end36, if.end44 -> if.end40, if.else45 -> if.end44
-INSTRUMENTED: if.end -> if.else18, if.then2 -> if.else9, if.else4 -> if.end3, if.then7 -> if.then12, if.then7 -> if.else14, if.then21 -> if.else28, if.else23 -> if.end22, if.then31 -> if.end32, if.else33 -> if.end32, if.then39 -> if.else45, if.else41 -> if.end40, if.then43 -> if.end44
+SPANNING_TREE: entry -> while.cond, while.cond -> while.body, while.cond -> while.end, while.body -> if.then, while.body -> if.else, if.then -> if.then2, if.then -> if.else4, if.end -> if.then22, if.else -> if.end, if.then2 -> if.then8, if.end3 -> if.end, if.end9 -> if.end3, if.else10 -> if.end9, if.then15 -> if.end16, if.end16 -> if.end9, if.else17 -> if.end16, if.then22 -> if.then28, if.then22 -> if.else30, if.end23 -> if.then49, if.end23 -> if.else51, if.else24 -> if.end23, if.then28 -> if.then35, if.end29 -> if.end23, if.then35 -> if.then42, if.then35 -> if.else44, if.end36 -> if.end29, if.else37 -> if.end36, if.end43 -> if.end36, if.then49 -> if.then54, if.then49 -> if.else56, if.end50 -> while.cond, if.else51 -> if.end50, if.then54 -> if.then59, if.end55 -> if.end50, if.end60 -> if.end55, if.else61 -> if.end60
+INSTRUMENTED: if.end -> if.else24, if.then2 -> if.else10, if.else4 -> if.end3, if.then8 -> if.then15, if.then8 -> if.else17, if.then28 -> if.else37, if.else30 -> if.end29, if.then42 -> if.end43, if.else44 -> if.end43, if.then54 -> if.else61, if.else56 -> if.end55, if.then59 -> if.end60
 EDGES:
 entry -> while.cond : 0
 while.cond -> while.body : 0
@@ -10,45 +10,45 @@ while.body -> if.then : 0
 while.body -> if.else : 0
 if.then -> if.then2 : 0
 if.then -> if.else4 : 0
-if.end -> if.then16 : 0
-if.end -> if.else18 : 100000000
+if.end -> if.then22 : 0
+if.end -> if.else24 : 100000000
 if.else -> if.end : 0
-if.then2 -> if.then7 : 0
-if.then2 -> if.else9 : 0
+if.then2 -> if.then8 : 0
+if.then2 -> if.else10 : 0
 if.end3 -> if.end : 0
 if.else4 -> if.end3 : 0
-if.then7 -> if.then12 : 200000000
-if.then7 -> if.else14 : 0
-if.end8 -> if.end3 : 200000000
-if.else9 -> if.end8 : 0
-if.then12 -> if.end13 : 0
-if.end13 -> if.end8 : 0
-if.else14 -> if.end13 : 0
-if.then16 -> if.then21 : 0
-if.then16 -> if.else23 : 0
-if.end17 -> if.then35 : 0
-if.end17 -> if.else37 : 0
-if.else18 -> if.end17 : 0
-if.then21 -> if.then26 : 0
-if.then21 -> if.else28 : 1
-if.end22 -> if.end17 : 0
-if.else23 -> if.end22 : 0
-if.then26 -> if.then31 : 0
-if.then26 -> if.else33 : 0
-if.end27 -> if.end22 : 100000000
-if.else28 -> if.end27 : 0
-if.then31 -> if.end32 : 99999999
-if.end32 -> if.end27 : 0
-if.else33 -> if.end32 : 0
-if.then35 -> if.then39 : 0
-if.then35 -> if.else41 : 0
-if.end36 -> while.cond : 0
+if.then8 -> if.then15 : 200000000
+if.then8 -> if.else17 : 0
+if.end9 -> if.end3 : 200000000
+if.else10 -> if.end9 : 0
+if.then15 -> if.end16 : 0
+if.end16 -> if.end9 : 0
+if.else17 -> if.end16 : 0
+if.then22 -> if.then28 : 0
+if.then22 -> if.else30 : 0
+if.end23 -> if.then49 : 0
+if.end23 -> if.else51 : 0
+if.else24 -> if.end23 : 0
+if.then28 -> if.then35 : 0
+if.then28 -> if.else37 : 1
+if.end29 -> if.end23 : 0
+if.else30 -> if.end29 : 0
+if.then35 -> if.then42 : 0
+if.then35 -> if.else44 : 0
+if.end36 -> if.end29 : 100000000
 if.else37 -> if.end36 : 0
-if.then39 -> if.then43 : 0
-if.then39 -> if.else45 : 0
-if.end40 -> if.end36 : 0
-if.else41 -> if.end40 : 0
-if.then43 -> if.end44 : 200000000
-if.end44 -> if.end40 : 200000000
-if.else45 -> if.end44 : 0
+if.then42 -> if.end43 : 99999999
+if.end43 -> if.end36 : 0
+if.else44 -> if.end43 : 0
+if.then49 -> if.then54 : 0
+if.then49 -> if.else56 : 0
+if.end50 -> while.cond : 0
+if.else51 -> if.end50 : 0
+if.then54 -> if.then59 : 0
+if.then54 -> if.else61 : 0
+if.end55 -> if.end50 : 0
+if.else56 -> if.end55 : 0
+if.then59 -> if.end60 : 200000000
+if.end60 -> if.end55 : 200000000
+if.else61 -> if.end60 : 0
 END_PROFILE
