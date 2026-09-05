@@ -10,7 +10,7 @@ import os
 import sys
 
 import unittest
-uscc = "../bin/uscc"
+uscc = "../../bin/uscc"
 nld = "--natural-loop"
 
 __unittest = True

@@ -20,7 +20,7 @@ import os
 import sys
 import unittest
 
-uscc = "../bin/uscc"
+uscc = "../../bin/uscc"
 
 __unittest = True
 

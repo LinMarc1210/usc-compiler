@@ -10,8 +10,8 @@ import os
 import sys
 
 import unittest
-uscc = "../bin/uscc"
-lli = "../../bin/lli"
+uscc = "../../bin/uscc"
+lli = "../../../bin/lli"
 
 __unittest = True
 

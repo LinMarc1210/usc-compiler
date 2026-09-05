@@ -20,8 +20,8 @@ import time
 import unittest
 import re
 
-uscc = "../bin/uscc"
-lli = "../../bin/lli"
+uscc = "../../bin/uscc"
+lli = "../../../bin/lli"
 
 __unittest = True
 

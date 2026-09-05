@@ -11,7 +11,7 @@ import sys
 import re
 
 import unittest
-uscc = "../bin/uscc"
+uscc = "../../bin/uscc"
 
 __unittest = True
 
