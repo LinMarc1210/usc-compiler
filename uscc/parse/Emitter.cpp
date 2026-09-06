@@ -50,7 +50,10 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/MC/SubtargetFeature.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/CodeGen/RegAllocRegistry.h>
 #include "../opt/Passes.h"
+#include "../opt/ProfileReader.h"
 #include <fstream>
 #include <sstream>
 #include <cctype>
@@ -209,73 +212,10 @@ void Emitter::doCopyProp()
 // ----------------------------------------------------------------------
 namespace {
 
-struct EdgeKey
-{
-	std::string fn, src, dst;
-	bool operator<(const EdgeKey &o) const
-	{
-		return std::tie(fn, src, dst) < std::tie(o.fn, o.src, o.dst);
-	}
-};
-typedef std::map<EdgeKey, uint64_t> ProfileMap;
-
-static std::string trim(std::string s)
-{
-	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
-		s.erase(s.begin());
-	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))
-		s.pop_back();
-	return s;
-}
-
-static ProfileMap parseProfileFile(const std::string &path)
-{
-	ProfileMap m;
-	std::ifstream f(path.c_str());
-	if (!f)
-	{
-		errs() << "SpecLICM: cannot open profile '" << path << "'\n";
-		return m;
-	}
-	std::string line, curFn;
-	bool inEdges = false;
-	while (std::getline(f, line))
-	{
-		std::string::size_type p;
-		if ((p = line.find("EDGE_PROFILE:")) != std::string::npos)
-		{
-			curFn = trim(line.substr(p + std::strlen("EDGE_PROFILE:")));
-			inEdges = false;
-		}
-		else if (trim(line) == "EDGES:")
-		{
-			inEdges = true;
-		}
-		else if (line.find("END_PROFILE") != std::string::npos)
-		{
-			inEdges = false;
-			curFn.clear();
-		}
-		else if (inEdges)
-		{
-			std::string::size_type arrow = line.find("->");
-			std::string::size_type colon = line.rfind(':');
-			if (arrow == std::string::npos || colon == std::string::npos || colon < arrow)
-				continue;
-			std::string src = trim(line.substr(0, arrow));
-			std::string dst = trim(line.substr(arrow + 2, colon - (arrow + 2)));
-			uint64_t cnt = 0;
-			try { cnt = std::stoull(trim(line.substr(colon + 1))); }
-			catch (...) { continue; }
-			EdgeKey k;
-			k.fn = curFn;
-			k.src = src;
-			k.dst = dst;
-			m[k] = cnt;
-		}
-	}
-	return m;
-}
+// Parser factored out — see uscc/opt/ProfileReader.{h,cpp}
+using uscc::opt::EdgeKey;
+using uscc::opt::ProfileMap;
+using uscc::opt::parseProfileFile;
 
 // For each conditional terminator whose successor edges are covered by the
 // profile, stamp !prof branch_weights using LLVM's own MDBuilder.  Any
@@ -384,9 +324,120 @@ bool Emitter::verify() noexcept
 }
 
 // This function will take the bitcode emitted by uscc and convert it to assembly
-bool Emitter::writeAsm(const char *fileName) noexcept
+bool Emitter::writeAsm(const char *fileName, bool profileSplitMode,
+                       const std::string &profilePath) noexcept
 {
-	// 11/20/2014 - This function removed because it doesn't work with LLVM 3.5.0...
-	
-	return true;
+  Module *mod = mContext.mModule;
+  if (!mod) {
+    assert("The pointer to Module must not be null!");
+    return false;
+  }
+
+  // This code is copied over from llc
+  InitializeNativeTarget();
+  InitializeNativeTargetAsmParser();
+  InitializeNativeTargetAsmPrinter();
+
+  PassRegistry *Registry = PassRegistry::getPassRegistry();
+  initializeCore(*Registry);
+  initializeCodeGen(*Registry);
+  initializeLoopStrengthReducePass(*Registry);
+  initializeLowerIntrinsicsPass(*Registry);
+  initializeUnreachableBlockElimPass(*Registry);
+
+  RegisterRegAlloc usccRegAlloc("uscc", "USCC register allocator",
+                                createUSCCRegisterAllocator);
+  RegisterRegAlloc usccProfileSplit("uscc-profile-split",
+                              "USCC profile-split register allocator",
+                              createUSCCRegisterAllocatorProfileSplit);
+
+  // If -profile-file was supplied, parse it and stamp the edge
+  // counts onto the Module as !prof branch_weights.  The
+  // profile-split allocator (selected by -regalloc below) picks
+  // them up via MachineBlockFrequencyInfo.
+  if (profileSplitMode && !profilePath.empty()) {
+    uscc::opt::ProfileMap profile =
+        uscc::opt::parseProfileFile(profilePath);
+    if (!profile.empty())
+      stampBranchWeights(*mod, profile);
+  }
+
+  const char *regallocArg =
+      profileSplitMode ? "-regalloc=uscc-profile-split" : "-regalloc=uscc";
+  const char *argv[] = {
+      fileName,
+      "-optimize-regalloc=true",
+      regallocArg
+  };
+  cl::ParseCommandLineOptions(3, argv, "USC compiler\n");
+
+  Triple TheTriple;
+  TheTriple.setTriple(sys::getDefaultTargetTriple());
+
+  // Get the target specific parser.
+  std::string Error;
+  const Target *TheTarget = TargetRegistry::lookupTarget("", TheTriple,
+                                                         Error);
+  if (!TheTarget) {
+    errs() << fileName << ": " << Error;
+    return false;
+  }
+
+  // Package up features to be passed to target/subtarget
+  CodeGenOpt::Level OLvl = CodeGenOpt::Less;
+
+  TargetOptions Options;
+  Options.DisableIntegratedAS = false;
+  Options.MCOptions.ShowMCEncoding = false;
+  Options.MCOptions.MCUseDwarfDirectory = false;
+  Options.MCOptions.AsmVerbose = true;
+  Options.PositionIndependentExecutable = 1;
+
+  std::unique_ptr<TargetMachine> target(
+      TheTarget->createTargetMachine(TheTriple.getTriple(), sys::getHostCPUName(), "",
+                                     Options, Reloc::PIC_,
+                                     CodeModel::Default, OLvl));
+  assert(target.get() && "Could not allocate target machine!");
+
+  assert(mod && "Should have exited if we didn't have a module!");
+  TargetMachine &Target = *target.get();
+
+  sys::fs::OpenFlags OpenFlags = sys::fs::F_None;
+  OpenFlags |= sys::fs::F_Text;
+  tool_output_file *FDOut = new tool_output_file(fileName, Error,
+                                                 OpenFlags);
+  // Figure out where we are going to send the output.
+  std::unique_ptr<tool_output_file> Out(FDOut);
+  if (!Out)
+    return 1;
+
+  // Build up all of the passes that we want to do to the module.
+  PassManager PM;
+
+  // Add an appropriate TargetLibraryInfo pass for the module's triple.
+  TargetLibraryInfo *TLI = new TargetLibraryInfo(TheTriple);
+  PM.add(TLI);
+
+  // Add the target data from the target machine, if it exists, or the module.
+  if (const DataLayout *DL = Target.getDataLayout())
+    mod->setDataLayout(DL);
+
+  PM.add(new DataLayoutPass(mod));
+  {
+    formatted_raw_ostream FOS(Out->os());
+
+    // Ask the target to add backend passes as necessary.
+    if (Target.addPassesToEmitFile(PM, FOS, TargetMachine::CGFT_AssemblyFile, false,
+                                   nullptr, nullptr)) {
+      errs() << fileName << ": target does not support generation of this"
+             << " file type!\n";
+      exit(1);
+    }
+
+    PM.run(*mod);
+  }
+
+  // Declare success.
+  Out->keep();
+  return true;
 }
