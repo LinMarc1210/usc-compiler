@@ -20,6 +20,7 @@
 #include <iostream>
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
+#include <llvm/ADT/SmallString.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/LLVMContext.h>
@@ -40,6 +41,7 @@ using namespace uscc;
 extern bool enableLiveness;
 extern bool enableAE;
 extern bool enableCSE;
+extern bool enableSpecLICM;
 
 int main(int argc, const char * argv[])
 {
@@ -112,6 +114,11 @@ int main(int argc, const char * argv[])
 	opt.add("", false, 0, 0, "Enable Common Subexpression Elimination (CSE)", "-cse");
 	opt.add("", false, 0, 0, "Enable Redundant Phi Nodes Removal", "-rpr");
 	opt.add("", false, 0, 0, "Enable Copy Propagation", "-copyprop");
+	opt.add("", false, 0, 0, "Enable Speculative Loop Invariant Code Motion", "-spec-licm");
+	opt.add("", false, 1, 0,
+	        "Edge-profile file (captured from an instrumented -EN/-EO run) used to "
+	        "gate speculative hoists in -spec-licm",
+	        "-profile-file");
 
 	opt.parse(argc, argv);
 	if (opt.isSet("-h"))
@@ -181,11 +188,14 @@ int main(int argc, const char * argv[])
 	}
 
 
+	llvm::SmallString<10> inputExt(fileName);
+	bool readBC = inputExt.endswith(".ll") || inputExt.endswith(".bc");
+
 	try
 	{
-		parse::Parser parser(fileName, &std::cerr, &std::cerr, astStream, outputSymbols);
+		parse::Parser parser(fileName, &std::cerr, &std::cerr, astStream, outputSymbols, readBC);
 
-		if (!parser.IsValid())
+		if (!readBC && !parser.IsValid())
 		{
 			std::cerr << parser.GetNumErrors() << " Error(s)" << std::endl;
 			return 1;
@@ -233,6 +243,17 @@ int main(int argc, const char * argv[])
 		if (opt.isSet("-copyprop"))
 		{
 			emit.doCopyProp();
+		}
+
+		if (opt.isSet("-spec-licm"))
+		{
+			enableSpecLICM = true;
+			std::string profilePath;
+			if (opt.isSet("-profile-file"))
+			{
+				opt.get("-profile-file")->getString(profilePath);
+			}
+			emit.doSpecLICM(profilePath);
 		}
 
 		// Check if we should run optimization passes
