@@ -1,0 +1,36 @@
+// fplicm02.usc
+// Two infrequent stores to the same cell, each writing a value derived
+// from the loop counter (NOT from arr[0] itself). This avoids the RMW
+// pattern that FPLICM's alias-tracker handles imprecisely when the
+// same cell is read AND written within one iteration, and focuses the
+// test on multiple independent repair sites for the SAME frequent load.
+int main()
+{
+	int arr[4];
+	int i;
+	int sum;
+
+	arr[0] = 2;
+	arr[1] = 0;
+	arr[2] = 0;
+	arr[3] = 0;
+
+	i = 0;
+	sum = 0;
+	while (i < 80)
+	{
+		sum = sum + arr[0];
+		if (i - ((i / 20) * 20) == 0)
+		{
+			arr[0] = i + 1;
+		}
+		if (i - ((i / 37) * 37) == 0)
+		{
+			arr[0] = i * 3;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

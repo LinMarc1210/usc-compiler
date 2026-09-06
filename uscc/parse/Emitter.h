@@ -97,6 +97,7 @@ public:
 	void doAE();
 	void doCSE();
 	void doCopyProp();
+	void doSpecLICM(const std::string &profileFile = "");
 	void doPhiRemoval(const char* fileName) noexcept;
 private:
 	CodeContext mContext;

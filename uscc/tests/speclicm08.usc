@@ -1,0 +1,29 @@
+// fplicm08.usc
+// Long dependent chain: load → mul → add → sub → mul → add. All operations
+// become "almost invariant" once the load is spec-hoisted, so
+// collectDependentChain should move the entire chain into the preheader,
+// reducing the loop body to just the final store to a sum accumulator.
+int main()
+{
+	int arr[2];
+	int i;
+	int sum;
+
+	arr[0] = 6;
+	arr[1] = 0;
+
+	i = 0;
+	sum = 0;
+	while (i < 50)
+	{
+		sum = sum + (((arr[0] * 3 + 7) - 2) * 2 + 5);
+		if (i - ((i / 12) * 12) == 0)
+		{
+			arr[0] = i + 3;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

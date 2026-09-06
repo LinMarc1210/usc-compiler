@@ -33,12 +33,52 @@ bool ConstantBranch::runOnFunction(Function& F)
 {
 	bool changed = false;
 	
+	// PA5: Implement
+	std::set<Instruction*> removeSet;
+
+	for (auto &BB : F) {
+		for (auto &inst : BB) {
+			if (BranchInst *br = dyn_cast<BranchInst>(&inst)) {
+				if (br->isConditional()) {
+					Value* cond = br->getCondition();
+					if (isa<ConstantInt>(cond)) {
+						removeSet.insert(&inst);    // add Instruction (br) to removeSet
+					}
+				}
+			}
+		}
+	}
+
+	for (auto *inst : removeSet) {
+		changed = true;
+
+		if (BranchInst *br = dyn_cast<BranchInst>(inst)) {
+			Value* v = br->getCondition();
+			ConstantInt *cond = dyn_cast<ConstantInt>(v);
+			BasicBlock *parent = br->getParent();
+			BasicBlock *leftSucc = br->getSuccessor(0);   // 0 for left (cond value = 1, true)
+			BasicBlock *rightSucc = br->getSuccessor(1);   // 1 for right (cond value = 0, true)
+
+			if (cond->isOne()) {   // if br's condition is true, go to left successor, notify right.
+				BranchInst::Create(leftSucc, parent);
+				rightSucc->removePredecessor(parent); 
+			}
+			else {   // if br's condition is false, go to right successor, notify left.
+				BranchInst::Create(rightSucc, parent);
+				leftSucc->removePredecessor(parent);
+			}
+		}
+
+		inst->eraseFromParent();
+	}
 	
 	return changed;
 }
 
 void ConstantBranch::getAnalysisUsage(AnalysisUsage& Info) const
 {
+	// PA5: Implement
+	Info.addRequired<ConstantOps>();
 }
 	
 } // opt

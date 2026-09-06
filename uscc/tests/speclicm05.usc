@@ -1,0 +1,36 @@
+// fplicm05.usc
+// Infrequent store writes to a DIFFERENT cell than the hoisted load.
+// arr[7] is read; arr[3] is written on the infrequent path. After alias
+// analysis, this wouldn't even trigger specHoistInst (canHoistInst would
+// return true), so the baseline hoist path handles it via hoistInst.
+// Verifies the filter doesn't false-positive.
+int main()
+{
+	int arr[8];
+	int i;
+	int sum;
+
+	arr[0] = 0;
+	arr[1] = 0;
+	arr[2] = 0;
+	arr[3] = 0;
+	arr[4] = 0;
+	arr[5] = 0;
+	arr[6] = 0;
+	arr[7] = 9;
+
+	i = 0;
+	sum = 0;
+	while (i < 32)
+	{
+		sum = sum + arr[7];
+		if (i - ((i / 16) * 16) == 0)
+		{
+			arr[3] = i;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}
