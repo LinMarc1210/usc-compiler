@@ -1,0 +1,25 @@
+// fplicm22.usc
+// Short loop (small trip count) with frequent-path load + infrequent store.
+// Verifies the pass handles small loops correctly.
+int main()
+{
+	int arr[2];
+	int i;
+	int sum;
+
+	arr[0] = 5;
+	arr[1] = 0;
+
+	sum = 0;
+	for (i = 0; i < 5; i = i + 1)
+	{
+		sum = sum + arr[0];
+		if (i - ((i / 4) * 4) == 0)
+		{
+			arr[0] = i + 1;
+		}
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

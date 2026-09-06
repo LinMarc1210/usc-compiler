@@ -1,0 +1,20 @@
+; ModuleID = 'cdb_chain.ll'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  br label %c2
+
+c2:                                               ; preds = %entry
+  br label %c3
+
+c3:                                               ; preds = %c2
+  br label %exit
+
+exit:                                             ; preds = %c3
+  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i32 0, i32 0), i32 20)
+  ret i32 0
+}

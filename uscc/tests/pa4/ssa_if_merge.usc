@@ -1,0 +1,21 @@
+// ssa_if_merge.usc
+// Tests variable redefined in if/else, used after merge (requires PHI node)
+
+int main()
+{
+	int x = 1;
+	int y = 10;
+
+	if (x)
+	{
+		y = 20;
+	}
+	else
+	{
+		y = 30;
+	}
+
+	printf("%d\n", y);
+
+	return 0;
+}

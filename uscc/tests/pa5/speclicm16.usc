@@ -1,0 +1,25 @@
+// fplicm16.usc
+// For-loop shape (canonical PA test). The initialization, condition, and
+// increment all come through the `for` syntax.
+int main()
+{
+	int arr[2];
+	int i;
+	int sum;
+
+	arr[0] = 4;
+	arr[1] = 0;
+
+	sum = 0;
+	for (i = 0; i < 64; i = i + 1)
+	{
+		sum = sum + arr[0];
+		if (i - ((i / 32) * 32) == 0)
+		{
+			arr[0] = i + 5;
+		}
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

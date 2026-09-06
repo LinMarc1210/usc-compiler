@@ -1,0 +1,44 @@
+Program:
+---Function: int main
+------CompoundStmt:
+---------Decl: int x
+------------ConstantExpr: 1
+---------Decl: int result
+------------ConstantExpr: 0
+---------SwitchStmt
+------------IdentExpr: x
+------------CaseStmt
+---------------ConstantExpr: 1
+------------CaseStmt
+---------------ConstantExpr: 2
+---------------AssignStmt: result
+------------------ConstantExpr: 12
+---------------BreakStmt
+------------CaseStmt
+---------------ConstantExpr: 3
+---------------AssignStmt: result
+------------------ConstantExpr: 3
+---------------BreakStmt
+------------DefaultStmt
+---------------AssignStmt: result
+------------------ConstantExpr: 0
+---------ReturnStmt:
+------------IdentExpr: result
+int main()
+{
+    int x = 1;
+    int result = 0;
+    switch (x)
+    {
+        case 1:
+        case 2:
+            result = 12;
+            break;
+        case 3:
+            result = 3;
+            break;
+        default:
+            result = 0;
+    }
+    return result;
+}

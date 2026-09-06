@@ -1,0 +1,4 @@
+Back Edge: while.cond <--- if.end23
+The size is 13, Natural Loop: if.else if.else17 if.end22 if.end23 if.then14 if.then3 land.end land.rhs while.body while.body10 while.cond while.cond5 while.end 
+Back Edge: while.cond5 <--- while.body10
+The size is 4, Natural Loop: land.end land.rhs while.body10 while.cond5 

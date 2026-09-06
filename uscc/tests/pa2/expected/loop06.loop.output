@@ -1,0 +1,6 @@
+Back Edge: outer_loop <--- if.then
+The size is 8, Natural Loop: if.end if.then outer_loop while.body while.body3 while.cond while.cond1 while.end 
+Back Edge: while.cond <--- while.end
+The size is 6, Natural Loop: if.end while.body while.body3 while.cond while.cond1 while.end 
+Back Edge: while.cond1 <--- if.end
+The size is 3, Natural Loop: if.end while.body3 while.cond1 

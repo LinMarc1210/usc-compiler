@@ -1,0 +1,16 @@
+// instcomb07.usc
+// Part 2: Identity - Multiplication by one
+// Tests: mul x, 1 -> x
+// Expected: No mul by 1 in optimized IR
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	return x * 1;
+}
+
+int main()
+{
+	printf("%d\n", foo(42));
+	return 0;
+}

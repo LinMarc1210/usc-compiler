@@ -63,58 +63,60 @@ bool DeadCodeElimination::runOnFunction(llvm::Function &F)
     Liveness &lv = getAnalysisID<Liveness>(&Liveness::ID);
 
     // PA3
+
     // Step #1: get a set of dead instructions and remove them.
-    bool changed = false;
-    while (true)
-    {
-        std::set<Instruction*> dead;
-        for (auto & BB : F)
-        {
-            for (auto & ins : BB)
-            {
-                if (ins.getOpcode() == Instruction::Store)
-                {
-                    if (lv.isDead(ins))
-                    {
-                        dead.insert(&ins);
-                        auto sourceInst = dyn_cast_or_null<Instruction>(ins.getOperand(0));
-                        if (sourceInst)
-                        {
-                            dead.insert(sourceInst);
-                            findDeadDefinitions(&ins, dead);
+    // TODO: Implement
+    bool changed = true;
+    std::set<Instruction*> deadVars;
+    while (changed) {
+        changed = false;
+
+        // 1. Mark step
+        for (auto &bb : F) {
+            for (auto &inst : bb) {
+                if (lv.isDead(inst)) {
+                    deadVars.insert(&inst);
+                    if (StoreInst *SI = dyn_cast<StoreInst>(&inst)) {
+                        Value *val = SI->getValueOperand();
+                        if (Instruction *II = dyn_cast<Instruction>(&inst)) {
+                            deadVars.insert(II);
                         }
                     }
+                    // recursively find all dependent dead code, add to deadVars
+                    findDeadDefinitions(&inst, deadVars);
                 }
             }
         }
-        if (!dead.empty())
-        {
-            changed = true;
-            for (auto ins : dead)
-            {
-                ins->replaceAllUsesWith(llvm::UndefValue::get(ins->getType()));
-                ins->eraseFromParent();
+
+        // 2. sweep step
+        if (!deadVars.empty()) {
+            for (auto &inst : deadVars) {    // llvm::Instruction *
+                if (!inst->use_empty()) {
+                    inst->replaceAllUsesWith(
+                        llvm::UndefValue::getNullValue(inst->getType())
+                    );
+                }
+                inst->eraseFromParent();  // no need to iterate early because this is C++ set
             }
+            lv.releaseMemory();
+            lv.runOnFunction(F);
+            changed = true;
+            deadVars.clear();
         }
-        else
-            break;
-        lv.runOnFunction(F);
     }
 
+
     // Step #2: remove the Alloca instructions having no uses.
-    for (auto & BB : F)
-    {
-        for (auto iter = BB.begin(); iter != BB.end();)
-        {
-            if (iter->getOpcode() == Instruction::Alloca && iter->use_empty())
-            {
-                auto next = std::next(iter);
-                iter->eraseFromParent();
-                iter = next;
+    // TODO: Implement
+    for (auto &bb : F) {
+        auto it = bb.begin();    // start iterator
+        while (it != bb.end()) {
+            Instruction &inst = *it++;    // next instruction (same woth *(it++) )
+            if (inst.getOpcode() == llvm::Instruction::Alloca && inst.use_empty()) {
+                inst.eraseFromParent();    // need to save next iterator first, because bb will not record ext iterator automatically.
             }
-            else
-                iter++;
         }
     }
-    return changed;
+
+    return false;
 }

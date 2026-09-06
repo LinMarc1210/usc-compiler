@@ -1,0 +1,104 @@
+Program:
+---Function: int main
+------CompoundStmt:
+---------Decl: int sum
+------------ConstantExpr: 0
+---------Decl: int i
+---------Decl: int mode
+------------ConstantExpr: 1
+---------ForStmt
+------------initStmt
+---------------AssignStmt: i
+------------------ConstantExpr: 0
+------------condExpr
+---------------ExprStmt
+------------------BinaryCmp <:
+---------------------IdentExpr: i
+---------------------ConstantExpr: 10
+------------stepStmt
+---------------ExprStmt
+------------------IncExpr: i
+------------bodyStmt
+---------------CompoundStmt:
+------------------IfStmt: 
+---------------------BinaryCmp ==:
+------------------------IdentExpr: i
+------------------------ConstantExpr: 8
+---------------------ThenStmt: 
+------------------------CompoundStmt:
+---------------------------BreakStmt
+------------------IfStmt: 
+---------------------BinaryCmp ==:
+------------------------IdentExpr: i
+------------------------ConstantExpr: 3
+---------------------ThenStmt: 
+------------------------CompoundStmt:
+---------------------------ContinueStmt
+------------------AssignStmt: sum
+---------------------BinaryMath +:
+------------------------IdentExpr: sum
+------------------------IdentExpr: i
+---------DoWhileStmt
+------------BinaryCmp <:
+---------------IdentExpr: sum
+---------------ConstantExpr: 30
+------------CompoundStmt:
+---------------AssignStmt: sum
+------------------BinaryMath +:
+---------------------IdentExpr: sum
+---------------------ConstantExpr: 1
+---------SwitchStmt
+------------IdentExpr: mode
+------------CaseStmt
+---------------ConstantExpr: 0
+---------------AssignStmt: sum
+------------------ConstantExpr: 0
+---------------BreakStmt
+------------CaseStmt
+---------------ConstantExpr: 1
+---------------AssignStmt: sum
+------------------BinaryMath +:
+---------------------IdentExpr: sum
+---------------------ConstantExpr: 100
+---------------BreakStmt
+------------DefaultStmt
+---------------AssignStmt: sum
+------------------BinaryMath +:
+---------------------IdentExpr: sum
+---------------------ConstantExpr: 50
+---------ReturnStmt:
+------------IdentExpr: sum
+int main()
+{
+    int sum = 0;
+    int i;
+    int mode = 1;
+    for (i = 0; i < 10; ++i)
+    {
+        if (i == 8)
+        {
+            break;
+        }
+        if (i == 3)
+        {
+            continue;
+        }
+        sum = sum + i;
+    }
+    do
+    {
+        sum = sum + 1;
+    } while (sum < 30);
+    switch (mode)
+    {
+        case 0:
+            sum = 0;
+            break;
+        case 1:
+            sum = sum + 100;
+            break;
+        default:
+            sum = sum + 50;
+    }
+    return sum;
+}
