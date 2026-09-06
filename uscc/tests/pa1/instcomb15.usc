@@ -1,0 +1,16 @@
+// instcomb15.usc
+// Part 4: LHS Zero Multiplication
+// Tests: 0 * x -> 0
+// Expected: Result is constant 0
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	return 0 * x;
+}
+
+int main()
+{
+	printf("%d\n", foo(99999));
+	return 0;
+}

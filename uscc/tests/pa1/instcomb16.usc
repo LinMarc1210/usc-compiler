@@ -1,0 +1,16 @@
+// instcomb16.usc
+// Part 5: Same Operand - Subtraction
+// Tests: sub x, x -> 0
+// Expected: Result is constant 0
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	return x - x;
+}
+
+int main()
+{
+	printf("%d\n", foo(12345));
+	return 0;
+}

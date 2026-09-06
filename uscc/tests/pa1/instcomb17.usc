@@ -1,0 +1,18 @@
+// instcomb17.usc
+// Part 5: Same Operand - Combined with other optimizations
+// Tests: x - x -> 0, then 0 + 10 -> 10
+// Expected: Chain of optimizations leading to constant 10
+//---------------------------------------------------------
+
+int foo(int x)
+{
+	int y = x - x;
+	int z = y + 10;
+	return z;
+}
+
+int main()
+{
+	printf("%d\n", foo(999));
+	return 0;
+}

@@ -52,195 +52,101 @@ bool EdgeProfilingOpt::runOnFunction(Function& F)
     LLVMContext& ctx = F.getContext();
     EdgeProfileData data;
 
-    // =========================================================
-    // Step 1: Collect all edges and assign block IDs (provided)
-    // =========================================================
+    //   PA2: Implement
+    // assign deterministic basic block IDs, enumerate all CFG edges.
     collectEdgesAndAssignBlockIds(F, data);
 
-    if (data.allEdges.empty())
-        return false;
-
-    // =========================================================
-    // Step 2: Build maximum spanning tree
-    //
-    // Goal: populate data.spanningTreeEdges with exactly
-    //       (numBlocks - 1) edges that form a spanning tree.
-    //
-    // Use a MAXIMUM spanning tree so that high-frequency edges
-    // (loops, hot paths) go into the tree and don't need counters,
-    // while low-frequency edges become instrumented non_maxst_edges.
-    //
-    // Sub-steps:
-    //   2a. Get estimated edge weights (provided)
-    //   2b. Implement Kruskal's algorithm for maximum spanning tree
-    //       - You'll need a Union-Find (disjoint set) data structure
-    //       - Sort edges by weight DESCENDING
-    //       - Greedily add edges that don't form cycles
-    //
-    // TODO: Student implements this section
-    // =========================================================
-
-    // --- Sub-step 2a: Get edge weights (provided) ---
-    LoopInfo& LI = getAnalysis<LoopInfo>();
+    // estimate edge weights and compute MaxST
+    // (a) obtain weighted edges
+    LoopInfo &LI = getAnalysis<LoopInfo>();
     std::vector<WeightedEdge> weightedEdges = estimateEdgeWeights(F, LI, data.allEdges);
-
-    // --- Sub-step 2b: Kruskal's maximum spanning tree ---
-
-    // Sort by weight descending (maximum spanning tree)
-    std::sort(weightedEdges.begin(), weightedEdges.end(),
-        [](const WeightedEdge& a, const WeightedEdge& b) {
+    // (b) sort weight edges in decreasing order
+    std::sort(weightedEdges.begin(), weightedEdges.end(), 
+        [](const WeightedEdge& a, const WeightedEdge& b){
             return a.weight > b.weight;
-        });
-
-    // Initialize Union-Find with all basic blocks
+        }
+    );
+    // (c) Union-Find initialization
     UnionFind uf;
-    for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
-    {
-        uf.makeSet(&*BB);
+    for (auto &bb : F) {
+        uf.makeSet(&bb);    // every bb is a disjoint set initially
     }
-
-    // Greedily add highest-weight edges that don't form cycles
-    unsigned treeEdgeCount = 0;
-    unsigned targetTreeEdges = data.numBlocks - 1;
-    for (const WeightedEdge& we : weightedEdges)
-    {
-        if (treeEdgeCount >= targetTreeEdges)
-            break;
-        if (uf.unite(we.edge.src, we.edge.dest))
-        {
+    // (d) Kruskal scan
+    for (auto &we : weightedEdges) {
+        BasicBlock* src = we.edge.src;
+        BasicBlock* dest = we.edge.dest;
+        if (uf.unite(src, dest)) {    // if unite succeeds, it means src and dest are in different sets (no cycle)
             data.spanningTreeEdges.insert(we.edge);
-            treeEdgeCount++;
+        }
+    }
+    // (e) derive instrument set
+    for (auto &edge : data.allEdges) {
+        if (data.spanningTreeEdges.count(edge) == 0) {
+            data.non_maxst_edges.push_back(edge);
         }
     }
 
-    // =========================================================
-    // Step 3: Identify non_maxst_edges (non-spanning-tree edges)
-    //
-    // Must populate data.non_maxst_edges with all edges NOT in the
-    // spanning tree. These are the edges that need instrumentation.
-    //
-    // TODO: Student implements this section
-    // =========================================================
-    for (const Edge& e : data.allEdges)
-    {
-        if (!data.spanningTreeEdges.count(e))
-        {
-            data.non_maxst_edges.push_back(e);
+    // create global last_src and edge_counts
+    createEdgeProfilingGlobals(F, data);
+
+    // insert selective instrumentation, only in non_maxst_edges
+    std::set<BasicBlock*> needsLogDest;
+    for (const auto& e : data.non_maxst_edges) {
+        needsLogDest.insert(e.dest);   // dest of all non-maxst edges
+    }
+    for (BasicBlock &bb : F) {
+        if (isa<ReturnInst>(bb.getTerminator())) {   // exit block needs logdest
+            needsLogDest.insert(&bb);
         }
     }
-
-    // =========================================================
-    // Step 4: Determine which blocks need instrumentation
-    //
-    // non_maxst_edgeDestBlocks: blocks that are the destination of at
-    // least one non_maxst_edge edge. Return blocks are also included
-    // so edges into them are captured.
-    //
-    // logsrcBlocks: blocks with at least one successor in
-    // non_maxst_edgeDestBlocks. Only these blocks need logsrc.
-    //
-    // TODO: Student implements this section
-    // =========================================================
-    std::set<BasicBlock*> non_maxst_edgeDestBlocks;
-    for (const Edge& c : data.non_maxst_edges)
-    {
-        non_maxst_edgeDestBlocks.insert(c.dest);
-    }
-    for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
-    {
-        if (isa<ReturnInst>(BB->getTerminator()))
-        {
-            non_maxst_edgeDestBlocks.insert(&*BB);
-        }
-    }
-
-    std::set<BasicBlock*> logsrcBlocks;
-    for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
-    {
-        BasicBlock* block = &*BB;
-        TerminatorInst* term = block->getTerminator();
-        for (unsigned i = 0; i < term->getNumSuccessors(); ++i)
-        {
-            if (non_maxst_edgeDestBlocks.count(term->getSuccessor(i)))
-            {
-                logsrcBlocks.insert(block);
-                break;
+    std::set<BasicBlock*> needsLogSrc;
+    for (BasicBlock &bb : F) {
+        for (succ_iterator SI = succ_begin(&bb), SE = succ_end(&bb); SI != SE; ++SI) {
+            BasicBlock *succ = *SI;
+            if (needsLogDest.count(succ)) {   // if any of the successors needs logdest, then this bb needs logsrc
+                needsLogSrc.insert(&bb);
             }
         }
     }
 
-    // =========================================================
-    // Step 5: Create globals (provided)
-    // =========================================================
-    createEdgeProfilingGlobals(F, data);
+    IntegerType *i32Ty = IntegerType::getInt32Ty(ctx);
+    IntegerType *i64Ty = IntegerType::getInt64Ty(ctx);
+    ConstantInt *numBlocksConst = ConstantInt::get(i64Ty, data.numBlocks);
 
-    // =========================================================
-    // Step 6: Insert selective logsrc/logdest instrumentation
-    //
-    // Unlike the naive pass, only:
-    //   - logdest in non_maxst_edge-destination blocks
-    //   - logsrc in predecessors of non_maxst_edge-destination blocks
-    //
-    // TODO: Student implements this section
-    // =========================================================
-    for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
-    {
-        BasicBlock* block = &*BB;
-        unsigned destId = data.blockId[block];
+    for (BasicBlock &bb : F) {
+        unsigned id = data.blockId[&bb];
+        IRBuilder<> builder(&bb);
+        // --- logdest(id) ---
+        // only instrument when bb is in non-maxst edges
+        if (needsLogDest.count(&bb)) {
+            builder.SetInsertPoint(bb.getFirstNonPHI());
+            
+            Value *lastSrc = builder.CreateLoad(data.lastSrcGlobal);
+            Value *lastSrc64 = builder.CreateZExt(lastSrc, i64Ty);
+            Value *idConst64 = ConstantInt::get(i64Ty, id);
+            
+            Value *mul = builder.CreateMul(lastSrc64, numBlocksConst);
+            Value *index = builder.CreateAdd(mul, idConst64);
 
-        // --- logdest: only in non_maxst_edge-destination blocks ---
-        if (non_maxst_edgeDestBlocks.count(block))
-        {
-            Instruction* insertPt = block->getFirstNonPHI();
-            IRBuilder<> destBuilder(insertPt);
-
-            // Load last_src
-            Value* srcIdVal = destBuilder.CreateLoad(
-                data.lastSrcGlobal, "last.src");
-
-            // Compute index = src_id * numBlocks + dest_id
-            Value* srcIdExt = destBuilder.CreateZExt(
-                srcIdVal, IntegerType::getInt64Ty(ctx), "src.ext");
-            Value* index = destBuilder.CreateAdd(
-                destBuilder.CreateMul(
-                    srcIdExt,
-                    ConstantInt::get(IntegerType::getInt64Ty(ctx), data.numBlocks),
-                    "mul.idx"),
-                ConstantInt::get(IntegerType::getInt64Ty(ctx), destId),
-                "edge.idx");
-
-            // GEP into edge matrix
-            std::vector<Value*> gepIndices;
-            gepIndices.push_back(ConstantInt::get(IntegerType::getInt64Ty(ctx), 0));
-            gepIndices.push_back(index);
-            Value* counterPtr = destBuilder.CreateGEP(
-                data.edgeMatrix, gepIndices, "counter.ptr");
-
-            // Increment counter
-            Value* count = destBuilder.CreateLoad(counterPtr, "count");
-            Value* incCount = destBuilder.CreateAdd(
-                count,
-                ConstantInt::get(IntegerType::getInt64Ty(ctx), 1),
-                "count.inc");
-            destBuilder.CreateStore(incCount, counterPtr);
+            Value *gepIdx[] = { ConstantInt::get(i64Ty, 0), index };
+            Value *counterAddr = builder.CreateGEP(data.edgeMatrix, gepIdx);
+            
+            Value *count = builder.CreateLoad(counterAddr);
+            Value *newCount = builder.CreateAdd(count, ConstantInt::get(i64Ty, 1));
+            builder.CreateStore(newCount, counterAddr);
         }
 
-        // --- logsrc: only in predecessors of non_maxst_edge-dest blocks ---
-        if (logsrcBlocks.count(block))
-        {
-            TerminatorInst* term = block->getTerminator();
-            IRBuilder<> srcBuilder(term);
-            srcBuilder.CreateStore(
-                ConstantInt::get(IntegerType::getInt32Ty(ctx), destId),
-                data.lastSrcGlobal);
+        // --- logsrc(id) ---
+        // only instrument when bb is in non-maxst edges
+        if (needsLogSrc.count(&bb)) {
+            builder.SetInsertPoint(bb.getTerminator());
+            ConstantInt *idConst32 = ConstantInt::get(i32Ty, id);
+            builder.CreateStore(idConst32, data.lastSrcGlobal);
         }
     }
 
-    // =========================================================
-    // Step 7: Insert profiling output (provided)
-    // =========================================================
+    // printing
     insertEdgeProfilePrinting(F, data, "opt");
-
     return true;
 }
 

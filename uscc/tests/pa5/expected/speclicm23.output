@@ -1,0 +1,59 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [2 x i32], align 8
+  %0 = getelementptr inbounds [2 x i32]* %arr, i32 0, i32 0
+  %1 = getelementptr inbounds i32* %0, i32 0
+  store i32 9, i32* %1
+  %2 = getelementptr inbounds i32* %0, i32 1
+  store i32 0, i32* %2
+  %3 = icmp ne i32 0, 0
+  br i1 %3, label %if.then, label %if.end, !prof !0
+
+if.then:                                          ; preds = %entry
+  %4 = getelementptr inbounds i32* %0, i32 0
+  %5 = load i32* %4
+  %6 = getelementptr inbounds i32* %0, i32 0
+  %alias.cmp = icmp eq i32* %4, %6
+  br label %alias.header
+
+if.end:                                           ; preds = %if.end4, %entry
+  %Phi10 = phi i32 [ 42, %entry ], [ %add, %if.end4 ]
+  %7 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %8 = call i32 (i8*, ...)* @printf(i8* %7, i32 %Phi10)
+  ret i32 0
+
+alias.header:                                     ; preds = %if.end4, %if.then
+  %.alloca.0 = phi i32 [ %5, %if.then ], [ %.alloca.0., %if.end4 ]
+  %alias.0 = phi i1 [ false, %if.then ], [ %alias.2, %if.end4 ]
+  %Phi212 = phi i32 [ 0, %if.then ], [ %add, %if.end4 ]
+  %Phi11 = phi i32 [ 0, %if.then ], [ %add7, %if.end4 ]
+  %neg.alias = icmp eq i1 %alias.0, false
+  %9 = load i32* %4
+  %.alloca.0. = select i1 %neg.alias, i32 %.alloca.0, i32 %9
+  %alias.0. = select i1 %neg.alias, i1 %alias.0, i1 false
+  %add = add i32 %Phi212, %.alloca.0.
+  %div = sdiv i32 %Phi11, 5
+  %mul = mul i32 %div, 5
+  %sub = sub i32 %Phi11, %mul
+  %eq = icmp eq i32 %sub, 0
+  br i1 %eq, label %if.then3, label %if.end4
+
+if.then3:                                         ; preds = %alias.header
+  %add5 = add i32 %Phi11, 1
+  store i32 %add5, i32* %6
+  br label %if.end4
+
+if.end4:                                          ; preds = %if.then3, %alias.header
+  %alias.2 = phi i1 [ %alias.cmp, %if.then3 ], [ %alias.0., %alias.header ]
+  %add7 = add i32 %Phi11, 1
+  %lt = icmp slt i32 %add7, 10
+  br i1 %lt, label %alias.header, label %if.end
+}
+
+!0 = metadata !{metadata !"branch_weights", i32 1, i32 1}

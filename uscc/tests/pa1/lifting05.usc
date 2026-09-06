@@ -1,0 +1,14 @@
+// lifting05.usc
+// Part 1: Basic Statements - While loop
+// Tests: ASTWhileStmt toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int x = 0;
+	while (x < 5)
+	{
+		x = x + 1;
+	}
+	return x;
+}

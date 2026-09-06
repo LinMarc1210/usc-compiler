@@ -1,0 +1,28 @@
+// fplicm19.usc
+// Loop with accumulator and a second "sink" variable. Both become
+// invariant-after-hoist and should be handled independently.
+int main()
+{
+	int arr[2];
+	int i;
+	int sum;
+	int prod;
+
+	arr[0] = 7;
+	arr[1] = 0;
+
+	sum = 0;
+	prod = 1;
+	for (i = 0; i < 16; i = i + 1)
+	{
+		sum = sum + arr[0];
+		prod = prod + arr[0] * 2;
+		if (i - ((i / 8) * 8) == 0)
+		{
+			arr[0] = i + 3;
+		}
+	}
+
+	printf("%d\n", sum + prod);
+	return 0;
+}

@@ -1,0 +1,8 @@
+********** Available Expressions Information **********
+********** Function: main, analysis iterates 1 times
+entry:
+  GEN: [1:   %add3 = add i32 %a2, %b1]
+  KILL: [0:   %add = add i32 %a, %b]
+  IN:
+  OUT: [1:   %add3 = add i32 %a2, %b1]
+

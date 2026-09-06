@@ -1,0 +1,19 @@
+; ModuleID = 'main'
+
+define i32 @bar(i32 %N) {
+entry:
+  br label %while.cond
+
+while.cond:                                       ; preds = %while.body, %entry
+  %Phi1 = phi i32 [ %add2, %while.body ], [ 0, %entry ]
+  %lt = icmp slt i32 %Phi1, %N
+  br i1 %lt, label %while.body, label %while.end
+
+while.body:                                       ; preds = %while.cond
+  %add = add i32 %Phi1, %N
+  %add2 = add i32 %Phi1, 1
+  br label %while.cond
+
+while.end:                                        ; preds = %while.cond
+  ret i32 0
+}

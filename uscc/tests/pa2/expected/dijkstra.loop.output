@@ -1,0 +1,10 @@
+Back Edge: for.cond <--- for.inc
+The size is 6, Natural Loop: for.body for.cond for.inc if.end if.then land.lhs.true 
+Back Edge: for.cond <--- for.inc
+The size is 3, Natural Loop: for.body for.cond for.inc 
+Back Edge: for.cond <--- for.inc
+The size is 3, Natural Loop: for.body for.cond for.inc 
+Back Edge: for.cond11 <--- for.inc44
+The size is 8, Natural Loop: for.body13 for.cond11 for.inc44 if.end if.then land.lhs.true land.lhs.true21 land.lhs.true25 
+Back Edge: for.cond5 <--- for.inc47
+The size is 12, Natural Loop: for.body13 for.body7 for.cond11 for.cond5 for.end46 for.inc44 for.inc47 if.end if.then land.lhs.true land.lhs.true21 land.lhs.true25 

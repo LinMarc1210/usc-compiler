@@ -1,0 +1,12 @@
+int main()
+{
+    int arr[5];
+    int x;
+    int y;
+    arr[0] = 10;
+    arr[1] = 20;
+    x = arr[0];
+    y = arr[1];
+    printf("%d %d\n", x, y);
+    return 0;
+}

@@ -1,0 +1,8 @@
+Back Edge: for.cond <--- for.inc
+The size is 3, Natural Loop: for.body for.cond for.inc 
+Back Edge: while.cond <--- if.end
+The size is 4, Natural Loop: if.end if.then while.body while.cond 
+Back Edge: for.cond <--- for.inc
+The size is 3, Natural Loop: for.body for.cond for.inc 
+Back Edge: for.cond4 <--- for.inc14
+The size is 5, Natural Loop: for.body7 for.cond4 for.inc14 if.end if.then 

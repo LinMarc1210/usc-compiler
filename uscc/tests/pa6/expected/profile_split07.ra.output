@@ -1,0 +1,32 @@
+********** USCC REGISTER ALLOCATION **********
+********** Function: main
+Found neighbors = 0 for %vreg8 [16r,32r:0)  0@16r
+Removal: %vreg8 [16r,32r:0)  0@16r
+Found neighbors = 0 for %vreg9 [48r,64r:0)  0@48r
+Removal: %vreg9 [48r,64r:0)  0@48r
+Found neighbors = 0 for %vreg10 [80r,96r:0)  0@80r
+Removal: %vreg10 [80r,96r:0)  0@80r
+Found neighbors = 0 for %vreg11 [112r,128r:0)  0@112r
+Removal: %vreg11 [112r,128r:0)  0@112r
+Found neighbors = 0 for %vreg12 [144r,160r:0)  0@144r
+Removal: %vreg12 [144r,160r:0)  0@144r
+Found neighbors = 2 for %vreg15 [400r,500r:0)  0@400r
+Removal: %vreg15 [400r,500r:0)  0@400r
+Found neighbors = 3 for %vreg20 [720r,752r:0)  0@720r
+Removal: %vreg20 [720r,752r:0)  0@720r
+Found neighbors = 2 for %vreg21 [176r,224B:0)[224B,384B:2)[576B,848r:2)[848r,912B:1)  0@176r 1@848r 2@224B-phi
+Removal: %vreg21 [176r,224B:0)[224B,384B:2)[576B,848r:2)[848r,912B:1)  0@176r 1@848r 2@224B-phi
+Found neighbors = 3 for %vreg22 [208r,224B:0)[224B,504r:2)[576B,752r:1)[752r,816B:3)[816B,912B:1)  0@208r 1@576B-phi 2@224B-phi 3@752r
+Removal: %vreg22 [208r,224B:0)[224B,504r:2)[576B,752r:1)[752r,816B:3)[816B,912B:1)  0@208r 1@576B-phi 2@224B-phi 3@752r
+Found neighbors = 0 for %vreg23 [272r,384B:0)[576B,640r:2)[640r,816B:1)  0@272r 1@640r 2@576B-phi
+Removal: %vreg23 [272r,384B:0)[576B,640r:2)[640r,816B:1)  0@272r 1@640r 2@576B-phi
+Assigning to physical register EAX: %vreg23 [272r,384B:0)[576B,640r:2)[640r,816B:1)  0@272r 1@640r 2@576B-phi
+Assigning to physical register ESI: %vreg22 [208r,224B:0)[224B,504r:2)[576B,752r:1)[752r,816B:3)[816B,912B:1)  0@208r 1@576B-phi 2@224B-phi 3@752r
+Assigning to physical register ECX: %vreg21 [176r,224B:0)[224B,384B:2)[576B,848r:2)[848r,912B:1)  0@176r 1@848r 2@224B-phi
+Assigning to physical register RDX: %vreg20 [720r,752r:0)  0@720r
+Assigning to physical register RDI: %vreg15 [400r,500r:0)  0@400r
+Assigning to physical register RAX: %vreg12 [144r,160r:0)  0@144r
+Assigning to physical register RAX: %vreg11 [112r,128r:0)  0@112r
+Assigning to physical register RAX: %vreg10 [80r,96r:0)  0@80r
+Assigning to physical register RAX: %vreg9 [48r,64r:0)  0@48r
+Assigning to physical register RAX: %vreg8 [16r,32r:0)  0@16r

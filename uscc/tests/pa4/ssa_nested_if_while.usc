@@ -1,0 +1,25 @@
+// ssa_nested_if_while.usc
+// Tests if/else inside while loop (requires PHI at while.cond + PHI at if.end)
+
+int main()
+{
+	int i = 0;
+	int sum = 0;
+
+	while (i < 10)
+	{
+		if (i < 5)
+		{
+			sum = sum + 1;
+		}
+		else
+		{
+			sum = sum + 2;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+
+	return 0;
+}

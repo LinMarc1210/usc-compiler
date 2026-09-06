@@ -1,0 +1,70 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [2 x i32], align 8
+  %0 = getelementptr inbounds [2 x i32]* %arr, i32 0, i32 0
+  %1 = getelementptr inbounds i32* %0, i32 0
+  store i32 3, i32* %1
+  %2 = getelementptr inbounds i32* %0, i32 1
+  store i32 0, i32* %2
+  %3 = getelementptr inbounds i32* %0, i32 0
+  %4 = load i32* %3
+  %mul = mul i32 %4, 2
+  %add = add i32 %mul, 4
+  %mul2 = mul i32 %add, 3
+  %sub = sub i32 %mul2, 5
+  %5 = getelementptr inbounds i32* %0, i32 0
+  %alias.cmp = icmp eq i32* %3, %5
+  br label %alias.header
+
+alias.header:                                     ; preds = %if.end, %entry
+  %sub.alloca.0 = phi i32 [ %sub, %entry ], [ %sub.alloca.1, %if.end ]
+  %alias.0 = phi i1 [ false, %entry ], [ %alias.2, %if.end ]
+  %Phi313 = phi i32 [ 0, %entry ], [ %add4, %if.end ]
+  %Phi12 = phi i32 [ 0, %entry ], [ %add9, %if.end ]
+  %neg.alias = icmp eq i1 %alias.0, false
+  br i1 %neg.alias, label %for.body, label %alias.fixup
+
+alias.fixup:                                      ; preds = %alias.header
+  %6 = load i32* %3
+  %7 = mul i32 %6, 2
+  %8 = add i32 %7, 4
+  %9 = mul i32 %8, 3
+  %10 = sub i32 %9, 5
+  br label %for.body
+
+for.body:                                         ; preds = %alias.header, %alias.fixup
+  %sub.alloca.1 = phi i32 [ %sub.alloca.0, %alias.header ], [ %10, %alias.fixup ]
+  %alias.1 = phi i1 [ %alias.0, %alias.header ], [ false, %alias.fixup ]
+  %add4 = add i32 %Phi313, %sub.alloca.1
+  %div = sdiv i32 %Phi12, 40
+  %mul5 = mul i32 %div, 40
+  %sub6 = sub i32 %Phi12, %mul5
+  %eq = icmp eq i32 %sub6, 0
+  br i1 %eq, label %if.then, label %if.end, !prof !0
+
+for.end:                                          ; preds = %if.end
+  %Phi3.lcssa = phi i32 [ %add4, %if.end ]
+  %11 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %12 = call i32 (i8*, ...)* @printf(i8* %11, i32 %Phi3.lcssa)
+  ret i32 0
+
+if.then:                                          ; preds = %for.body
+  %add7 = add i32 %Phi12, 2
+  store i32 %add7, i32* %5
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %for.body
+  %alias.2 = phi i1 [ %alias.cmp, %if.then ], [ %alias.1, %for.body ]
+  %add9 = add i32 %Phi12, 1
+  %lt = icmp slt i32 %add9, 100
+  br i1 %lt, label %alias.header, label %for.end, !prof !1
+}
+
+!0 = metadata !{metadata !"branch_weights", i32 3, i32 97}
+!1 = metadata !{metadata !"branch_weights", i32 100, i32 1}

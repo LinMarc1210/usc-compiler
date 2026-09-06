@@ -1,0 +1,80 @@
+********** USCC PROFILE-SPLIT REGISTER ALLOCATION **********
+********** Function: main
+keep split (Rule3): %vreg31 at join BB#1
+keep split (Rule3): %vreg32 at join BB#1
+coalesce (Rule3): %vreg31 at join BB#2
+coalesce (Rule3): %vreg32 at join BB#2
+keep split (Rule3): %vreg32 at join BB#3
+keep split (Rule3): %vreg31 at join BB#4
+keep split (Rule3): %vreg32 at join BB#4
+coalesce (Rule3): %vreg31 at join BB#5
+coalesce (Rule3): %vreg32 at join BB#5
+coalesce (Rule3): %vreg33 at join BB#5
+keep split (Rule3): %vreg31 at join BB#6
+keep split (Rule3): %vreg32 at join BB#6
+coalesce (Rule3): %vreg31 at join BB#7
+coalesce (Rule3): %vreg32 at join BB#7
+coalesce (Rule3): %vreg33 at join BB#7
+keep split (Rule3): %vreg31 at join BB#8
+keep split (Rule3): %vreg32 at join BB#8
+keep split (Rule3): %vreg31 at join BB#9
+keep split (Rule3): %vreg32 at join BB#9
+deploy: split %vreg31 at BB#1 -> %vreg34
+deploy: split %vreg32 at BB#1 -> %vreg35
+deploy: split %vreg32 at BB#3 -> %vreg36
+deploy: split %vreg31 at BB#4 -> %vreg37
+deploy: split %vreg32 at BB#4 -> %vreg38
+deploy: split %vreg31 at BB#6 -> %vreg39
+deploy: split %vreg32 at BB#6 -> %vreg40
+deploy: split %vreg31 at BB#8 -> %vreg41
+deploy: split %vreg32 at BB#8 -> %vreg42
+deploy: split %vreg31 at BB#9 -> %vreg43
+deploy: split %vreg32 at BB#9 -> %vreg44
+Found neighbors = 5 for %vreg3 [704r,720r:0)  0@704r
+Removal: %vreg3 [704r,720r:0)  0@704r
+Found neighbors = 2 for %vreg12 [368r,468r:0)  0@368r
+Removal: %vreg12 [368r,468r:0)  0@368r
+Found neighbors = 13 for %vreg31 [16r,352B:0)[544B,1248B:0)  0@16r
+Removal: %vreg31 [16r,352B:0)[544B,1248B:0)  0@16r
+Found neighbors = 12 for %vreg32 [48r,352B:0)[544B,1248B:0)  0@48r
+Removal: %vreg32 [48r,352B:0)[544B,1248B:0)  0@48r
+Found neighbors = 6 for %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Removal: %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Found neighbors = 10 for %vreg34 [56r,64B:8)[64B,352B:9)[544B,608r:9)[608r,616r:3)[616r,672B:4)[672B,832r:9)[832r,840r:2)[840r,896B:5)[896B,1056r:9)[1056r,1064r:1)[1064r,1120B:6)[1120B,1184r:9)[1184r,1192r:0)[1192r,1248B:7)  0@1184r 1@1056r 2@832r 3@608r 4@616r 5@840r 6@1064r 7@1192r 8@56r 9@64B-phi
+Removal: %vreg34 [56r,64B:8)[64B,352B:9)[544B,608r:9)[608r,616r:3)[616r,672B:4)[672B,832r:9)[832r,840r:2)[840r,896B:5)[896B,1056r:9)[1056r,1064r:1)[1064r,1120B:6)[1120B,1184r:9)[1184r,1192r:0)[1192r,1248B:7)  0@1184r 1@1056r 2@832r 3@608r 4@616r 5@840r 6@1064r 7@1192r 8@56r 9@64B-phi
+Found neighbors = 11 for %vreg35 [60r,64B:8)[64B,472r:9)[544B,576r:9)[576r,620r:3)[620r,672B:4)[672B,800r:9)[800r,844r:2)[844r,896B:5)[896B,1024r:9)[1024r,1068r:1)[1068r,1120B:6)[1120B,1152r:9)[1152r,1196r:0)[1196r,1248B:7)  0@1152r 1@1024r 2@800r 3@576r 4@620r 5@844r 6@1068r 7@1196r 8@60r 9@64B-phi
+Removal: %vreg35 [60r,64B:8)[64B,472r:9)[544B,576r:9)[576r,620r:3)[620r,672B:4)[672B,800r:9)[800r,844r:2)[844r,896B:5)[896B,1024r:9)[1024r,1068r:1)[1068r,1120B:6)[1120B,1152r:9)[1152r,1196r:0)[1196r,1248B:7)  0@1152r 1@1024r 2@800r 3@576r 4@620r 5@844r 6@1068r 7@1196r 8@60r 9@64B-phi
+Found neighbors = 0 for %vreg36 [120r,120d:0)  0@120r
+Removal: %vreg36 [120r,120d:0)  0@120r
+Found neighbors = 0 for %vreg37 [312r,312d:0)  0@312r
+Removal: %vreg37 [312r,312d:0)  0@312r
+Found neighbors = 0 for %vreg38 [316r,316d:0)  0@316r
+Removal: %vreg38 [316r,316d:0)  0@316r
+Found neighbors = 0 for %vreg39 [728r,728d:0)  0@728r
+Removal: %vreg39 [728r,728d:0)  0@728r
+Found neighbors = 0 for %vreg40 [732r,732d:0)  0@732r
+Removal: %vreg40 [732r,732d:0)  0@732r
+Found neighbors = 0 for %vreg41 [952r,952d:0)  0@952r
+Removal: %vreg41 [952r,952d:0)  0@952r
+Found neighbors = 0 for %vreg42 [956r,956d:0)  0@956r
+Removal: %vreg42 [956r,956d:0)  0@956r
+Found neighbors = 0 for %vreg43 [964r,964d:0)  0@964r
+Removal: %vreg43 [964r,964d:0)  0@964r
+Found neighbors = 0 for %vreg44 [968r,968d:0)  0@968r
+Removal: %vreg44 [968r,968d:0)  0@968r
+Assigning to physical register EAX: %vreg44 [968r,968d:0)  0@968r
+Assigning to physical register EAX: %vreg43 [964r,964d:0)  0@964r
+Assigning to physical register EAX: %vreg42 [956r,956d:0)  0@956r
+Assigning to physical register EAX: %vreg41 [952r,952d:0)  0@952r
+Assigning to physical register EAX: %vreg40 [732r,732d:0)  0@732r
+Assigning to physical register EAX: %vreg39 [728r,728d:0)  0@728r
+Assigning to physical register EAX: %vreg38 [316r,316d:0)  0@316r
+Assigning to physical register EAX: %vreg37 [312r,312d:0)  0@312r
+Assigning to physical register EAX: %vreg36 [120r,120d:0)  0@120r
+Assigning to physical register ESI: %vreg35 [60r,64B:8)[64B,472r:9)[544B,576r:9)[576r,620r:3)[620r,672B:4)[672B,800r:9)[800r,844r:2)[844r,896B:5)[896B,1024r:9)[1024r,1068r:1)[1068r,1120B:6)[1120B,1152r:9)[1152r,1196r:0)[1196r,1248B:7)  0@1152r 1@1024r 2@800r 3@576r 4@620r 5@844r 6@1068r 7@1196r 8@60r 9@64B-phi
+Assigning to physical register ECX: %vreg34 [56r,64B:8)[64B,352B:9)[544B,608r:9)[608r,616r:3)[616r,672B:4)[672B,832r:9)[832r,840r:2)[840r,896B:5)[896B,1056r:9)[1056r,1064r:1)[1064r,1120B:6)[1120B,1184r:9)[1184r,1192r:0)[1192r,1248B:7)  0@1184r 1@1056r 2@832r 3@608r 4@616r 5@840r 6@1064r 7@1192r 8@56r 9@64B-phi
+Assigning to physical register RDX: %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Assigning to physical register EDI: %vreg32 [48r,352B:0)[544B,1248B:0)  0@48r
+Assigning to physical register R8D: %vreg31 [16r,352B:0)[544B,1248B:0)  0@16r
+Assigning to physical register RDI: %vreg12 [368r,468r:0)  0@368r
+Assigning to physical register EAX: %vreg3 [704r,720r:0)  0@704r

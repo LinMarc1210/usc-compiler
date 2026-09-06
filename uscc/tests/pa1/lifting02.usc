@@ -1,0 +1,12 @@
+// lifting02.usc
+// Part 1: Basic Statements - Variable declaration and assignment
+// Tests: ASTDecl, ASTAssignStmt toCode()
+//---------------------------------------------------------
+
+int main()
+{
+	int x;
+	int y = 5;
+	x = 10;
+	return x;
+}

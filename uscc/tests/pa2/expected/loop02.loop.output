@@ -1,0 +1,10 @@
+Back Edge: for.cond <--- for.inc
+The size is 3, Natural Loop: for.body for.cond for.inc 
+Back Edge: while.cond <--- while.end15
+The size is 11, Natural Loop: while.body while.body13 while.body4 while.body9 while.cond while.cond11 while.cond2 while.cond7 while.end while.end14 while.end15 
+Back Edge: while.cond11 <--- while.body13
+The size is 2, Natural Loop: while.body13 while.cond11 
+Back Edge: while.cond2 <--- while.end14
+The size is 8, Natural Loop: while.body13 while.body4 while.body9 while.cond11 while.cond2 while.cond7 while.end while.end14 
+Back Edge: while.cond7 <--- while.end
+The size is 5, Natural Loop: while.body13 while.body9 while.cond11 while.cond7 while.end 
