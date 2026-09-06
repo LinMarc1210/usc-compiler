@@ -173,12 +173,10 @@ namespace llvm
 {
     void initializeLivenessPass(PassRegistry &Registry);
     void initializeAvailableExpressionsPass(PassRegistry &Registry);
-    void initializeSpecLICMPass(PassRegistry &Registry);
     FunctionPass* createLivenessPass();
     FunctionPass* createDCEPass();
     FunctionPass* createAEPass();
     FunctionPass* createCSEPass();
     FunctionPass* createRedundantPhiRemovalPass();
 	FunctionPass* createCopyPropagationPass();
-    LoopPass* createSpecLICMPass();
 }

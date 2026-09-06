@@ -23,11 +23,6 @@
 #include <llvm/PassManager.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/LegacyPassManager.h>
-#include <llvm/IR/MDBuilder.h>
-#include <llvm/IR/Metadata.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/Function.h>
 #include <llvm/Bitcode/BitcodeWriterPass.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/LLVMContext.h>
@@ -35,10 +30,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Dominators.h>
-#include <llvm/ADT/SmallVector.h>
 #include <llvm/Analysis/LoopPass.h>
-#include <llvm/Analysis/Passes.h>
-#include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/FormattedStream.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetRegistry.h>
@@ -51,12 +43,6 @@
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/MC/SubtargetFeature.h>
 #include "../opt/Passes.h"
-#include <fstream>
-#include <sstream>
-#include <cctype>
-#include <cstring>
-#include <map>
-#include <tuple>
 #pragma clang diagnostic pop
 
 using namespace uscc::parse;
@@ -89,24 +75,8 @@ Emitter::Emitter(Parser& parser, bool ASTOptimized, bool PeelingEnabled) noexcep
 	// Initialize zero
 	mContext.mZero = Constant::getNullValue(IntegerType::getInt32Ty(mContext.mGlobal));
 
-	// This is what kicks off the generation of the LLVM IR from the AST.
-	// If the input is a pre-compiled .ll/.bc file, skip AST emission and
-	// parse the IR directly into the Module instead.
-	if (!parser.readBC)
-	{
-		parser.mRoot->emitIR(mContext);
-	}
-	else
-	{
-		llvm::SMDiagnostic err;
-		mContext.mModule = llvm::ParseIRFile(parser.mFileName, err,
-		                                     llvm::getGlobalContext());
-		if (!mContext.mModule)
-		{
-			err.print("uscc", llvm::errs());
-			exit(1);
-		}
-	}
+	// This is what kicks off the generation of the LLVM IR from the AST
+	parser.mRoot->emitIR(mContext);
 }
 
 void Emitter::printCode(Parser& parser) noexcept
@@ -188,163 +158,6 @@ void Emitter::doCopyProp()
 {
 	legacy::PassManager pm;
 	pm.add(createCopyPropagationPass());
-	pm.run(*mContext.mModule);
-}
-
-// ----------------------------------------------------------------------
-// Profile-driven SpecLICM support.
-//
-// Phase 1 (unchanged): an instrumented build emits edge counts to stdout
-// via the PA2 -EN / -EO passes.  Running that binary + splitting out the
-// `EDGE_PROFILE: ... END_PROFILE` records yields a plain text file.
-//
-// Phase 2 (this code): we parse that text file into an in-memory edge-count
-// map, then walk the Module and stamp LLVM's standard !prof metadata
-// (`!{!"branch_weights", i32 W0, i32 W1, ...}`) onto each conditional
-// terminator whose successor edges are covered by the profile.
-//
-// After stamping, SpecLICM reads the same metadata via BranchProbabilityInfo
-// exactly as if it had come from -fprofile-instr-use, so the pass itself is
-// independent of this file format.
-// ----------------------------------------------------------------------
-namespace {
-
-struct EdgeKey
-{
-	std::string fn, src, dst;
-	bool operator<(const EdgeKey &o) const
-	{
-		return std::tie(fn, src, dst) < std::tie(o.fn, o.src, o.dst);
-	}
-};
-typedef std::map<EdgeKey, uint64_t> ProfileMap;
-
-static std::string trim(std::string s)
-{
-	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
-		s.erase(s.begin());
-	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))
-		s.pop_back();
-	return s;
-}
-
-static ProfileMap parseProfileFile(const std::string &path)
-{
-	ProfileMap m;
-	std::ifstream f(path.c_str());
-	if (!f)
-	{
-		errs() << "SpecLICM: cannot open profile '" << path << "'\n";
-		return m;
-	}
-	std::string line, curFn;
-	bool inEdges = false;
-	while (std::getline(f, line))
-	{
-		std::string::size_type p;
-		if ((p = line.find("EDGE_PROFILE:")) != std::string::npos)
-		{
-			curFn = trim(line.substr(p + std::strlen("EDGE_PROFILE:")));
-			inEdges = false;
-		}
-		else if (trim(line) == "EDGES:")
-		{
-			inEdges = true;
-		}
-		else if (line.find("END_PROFILE") != std::string::npos)
-		{
-			inEdges = false;
-			curFn.clear();
-		}
-		else if (inEdges)
-		{
-			std::string::size_type arrow = line.find("->");
-			std::string::size_type colon = line.rfind(':');
-			if (arrow == std::string::npos || colon == std::string::npos || colon < arrow)
-				continue;
-			std::string src = trim(line.substr(0, arrow));
-			std::string dst = trim(line.substr(arrow + 2, colon - (arrow + 2)));
-			uint64_t cnt = 0;
-			try { cnt = std::stoull(trim(line.substr(colon + 1))); }
-			catch (...) { continue; }
-			EdgeKey k;
-			k.fn = curFn;
-			k.src = src;
-			k.dst = dst;
-			m[k] = cnt;
-		}
-	}
-	return m;
-}
-
-// For each conditional terminator whose successor edges are covered by the
-// profile, stamp !prof branch_weights using LLVM's own MDBuilder.  Any
-// downstream pass (in our case SpecLICM via BranchProbabilityInfo) sees the
-// stamped weights exactly as if they had come from -fprofile-instr-use.
-static void stampBranchWeights(llvm::Module &M, const ProfileMap &profile)
-{
-	MDBuilder MDB(M.getContext());
-	for (llvm::Function &F : M)
-	{
-		if (!F.hasName()) continue;
-		std::string fn = F.getName().str();
-		for (llvm::BasicBlock &BB : F)
-		{
-			TerminatorInst *T = BB.getTerminator();
-			unsigned n = T->getNumSuccessors();
-			if (n < 2) continue; // only conditional br / switch
-			SmallVector<uint32_t, 4> weights;
-			weights.reserve(n);
-			bool anyFound = false;
-			uint32_t cap = UINT32_MAX / n;
-			for (unsigned i = 0; i < n; ++i)
-			{
-				BasicBlock *succ = T->getSuccessor(i);
-				EdgeKey k;
-				k.fn = fn;
-				k.src = BB.getName().str();
-				k.dst = succ->getName().str();
-				ProfileMap::const_iterator it = profile.find(k);
-				uint64_t c = (it == profile.end()) ? 0 : it->second;
-				if (c > 0) anyFound = true;
-				// BPI clamps its own weights to [1, UINT32_MAX/numSuccessors].
-				uint32_t w = (c == 0) ? 1u
-				                      : static_cast<uint32_t>(std::min<uint64_t>(c, cap));
-				weights.push_back(w);
-			}
-			if (!anyFound) continue;
-			T->setMetadata(llvm::LLVMContext::MD_prof,
-			               MDB.createBranchWeights(weights));
-		}
-	}
-}
-
-} // anonymous namespace
-
-void Emitter::doSpecLICM(const std::string &profileFile)
-{
-	// Phase 2 step (a): parse the text profile and stamp !prof metadata.
-	// When no profile file is supplied, this is skipped entirely and SpecLICM
-	// falls back to its pure alias-analysis-driven behavior (zero regression
-	// from the default `-spec-licm` invocation).
-	if (!profileFile.empty())
-	{
-		ProfileMap profile = parseProfileFile(profileFile);
-		if (!profile.empty())
-			stampBranchWeights(*mContext.mModule, profile);
-	}
-
-	// Phase 2 step (b): run the pass pipeline.  SpecLICM picks up !prof
-	// metadata via BranchProbabilityInfo and narrows its speculative hoists
-	// to loads whose aliasing stores all live on the infrequent path.
-	// Dependent-chain hoisting is handled explicitly inside SpecLICM itself
-	// (see collectDependentChain in SpecLICM.cpp) — no external LICM needed.
-	legacy::PassManager pm;
-	pm.add(createTypeBasedAliasAnalysisPass());
-	pm.add(createBasicAliasAnalysisPass());
-	pm.add(createLoopRotatePass());
-	pm.add(createSpecLICMPass());
-	pm.add(createCFGSimplificationPass());
 	pm.run(*mContext.mModule);
 }
 

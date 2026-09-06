@@ -34,6 +34,11 @@ void registerOptPasses(legacy::PassManager& pm)
 	pm.add(new ConstantOps());
 	pm.add(new ConstantBranch());
 	pm.add(new DeadBlocks());
+	// pm.add(new LICM());
+	// pm.add(new DominatorTreeWrapperPass());
+	// pm.add(new LoopInfo());
+    // pm.add(new InstCombine());
+	// pm.add(new CopyPropagation());
 }
 
 void registerEdgeProfilingPass(legacy::PassManager& pm)
@@ -61,7 +66,6 @@ void registerAnalysisPasses(llvm::PassRegistry &Registry)
 {
     initializeLivenessPass(Registry);
     initializeAvailableExpressionsPass(Registry);
-    llvm::initializeSpecLICMPass(Registry);
 }
 
 

@@ -46,7 +46,7 @@ class Parser
 public:
 	// Constructor takes in a file name and performs the parse
 	Parser(const char* fileName, std::ostream* errStream, std::ostream* warnStream,
-		   std::ostream* ASTStream, bool outputSymbols, bool readBC = false);
+		   std::ostream* ASTStream, bool outputSymbols);
 	
 	// Destructor not virtual; I don't expect any inheritance
 	~Parser();
@@ -285,8 +285,6 @@ private:
 
 	// Name of the file we're parsing
 	const char* mFileName;
-	// True if the input is a pre-compiled .ll or .bc file (skip USC parsing).
-	bool readBC;
 	// File stream that we use to process the file
 	std::ifstream mFileStream;
 	// Ostream exceptions should be output to
