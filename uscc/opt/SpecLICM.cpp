@@ -1,10 +1,7 @@
 /**
  * USC Compiler
  * Jianping Zeng (zeng207@purdue.edu)
- * Speculative Loop Invariant Code Motion (SpecLICM) — profile-gated
- * speculative LICM. Hoists loads whose aliasing stores live on the
- * infrequent path (as told by !prof branch-weight metadata, read via
- * BranchProbabilityInfo), plus their dependent instruction chains.
+ * Speculative Loop Invariant Code Motion (SpecLICM).
 */
 
 #include "Passes.h"
@@ -18,6 +15,7 @@
 #include <llvm/Transforms/Utils/PromoteMemToReg.h>
 #include <queue>
 #include <vector>
+#include <stack>
 
 using namespace llvm;
 
@@ -46,7 +44,7 @@ public:
     // Use alias analysis to hoist loads
     AU.addRequired<AliasAnalysis>();
     AU.addPreserved<AliasAnalysis>();
-    // Profile-driven frequent-path identification (Q1 extension).
+    // Profile-driven frequent-path identification.
     AU.addRequired<BranchProbabilityInfo>();
   }
 
@@ -69,7 +67,7 @@ private:
   DenseMap<Loop *, AliasSetTracker *> loop2AliasSet;
   std::vector<AllocaInst *> aliasAI;
   DenseSet<Instruction*> insertedLds;
-  // Profile-driven members (Q1 extension). Populated at the start of each
+  // Profile-driven members. Populated at the start of each
   // runOnLoop invocation from !prof metadata via BranchProbabilityInfo.
   BranchProbabilityInfo *bpi;
   std::set<BasicBlock*> frequentPath;
@@ -125,7 +123,7 @@ LoopPass *llvm::createSpecLICMPass() {
 }
 
 bool SpecLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
-  // PA5: Implement
+  // PA5: Implement if necessary
   changed = false;
   // Save the current loop
   currLoop = L;
@@ -188,369 +186,407 @@ bool SpecLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
 }
 
 void SpecLICM::hoistRegion(DomTreeNode *startNode) {
+  // PA5: Implement
   BasicBlock *bb = startNode->getBlock();
-  if (!inCurrentLoop(bb))
-    return;
 
-  // Only deal with the blocks in the current loop. Any basic blocks inside
-  // subloops should already been processed.
-  if (loopInfo->getLoopFor(bb) == currLoop) {
-    std::vector<Instruction *> snapshot;
-    for (Instruction &Inst : *bb) snapshot.push_back(&Inst);
-    for (Instruction *inst : snapshot) {
-      if (inst->getParent() != bb) continue;
-      if (isSafeToHoist(inst)) {
-        LoadInst *li = dyn_cast<LoadInst>(inst);
-        if (canHoistInst(inst)) {
-          hoistInst(inst);
-        } else if (enableSpecLICM && li) {
-          if (!frequentPath.empty() && anyConflictOnFrequentPath(li))
-            continue;
-          specHoistInst(li);
+  if (inCurrentLoop(bb)){
+
+    // only handle this loop level, not inner loop
+    // avoid revisit of nested loop
+    if (loopInfo->getLoopFor(bb) == currLoop) {
+
+      std::vector<Instruction*> InstList;
+      for (Instruction &inst : *bb) {    // copy inst in bb
+        InstList.push_back(&inst);
+      }
+
+      for (auto *currentInstr : InstList) {
+        if (currentInstr->getParent() != bb) {
+          continue; // if moved out of bb, just skip
+        }
+        if (isSafeToHoist(currentInstr)) {
+          if (canHoistInst(currentInstr)) {
+            hoistInst(currentInstr);
+          }
+          else if (enableSpecLICM && isa<LoadInst>(currentInstr)) {
+            LoadInst *LI = dyn_cast<LoadInst>(currentInstr);
+            if (!frequentPath.empty() && anyConflictOnFrequentPath(LI)) {
+              continue;
+            }
+            specHoistInst(LI);
+          }
         }
       }
+
     }
+
   }
-  for (auto &child : startNode->getChildren())
+
+  std::vector<DomTreeNode*> children = startNode->getChildren();
+  for (auto *child : children) {
     hoistRegion(child);
+  }
+
 }
 
 bool SpecLICM::isSafeToHoist(llvm::Instruction *inst) {
-  return currLoop->hasLoopInvariantOperands(inst) &&
-      !insertedLds.count(inst) &&
-      (isSafeToSpeculativelyExecute(inst, dl) || guaranteedToExecute(inst));
-}
+  // PA5: Implement
 
-void SpecLICM::hoistInst(Instruction *inst) {
-  inst->moveBefore(preheader->getTerminator());
-  changed = true;
-}
-
-bool SpecLICM::canHoistInst(Instruction *inst) {
-  // Extra check for load.
-  if (LoadInst *li = dyn_cast<LoadInst>(inst)) {
-    // Don't hoist volatile or atomic load.
-    if (!li->isUnordered())
-      return false;
-
-    // Hoist the load if it reads from constant memory.
-    if (aa->pointsToConstantMemory(li->getOperand(0)))
-      return true;
-
-    // Speculatively hoist the load if it is must| may aliased with stores in the loop.
-    // If so, we need to insert some run-time fix-up code at the header of the current
-    // loop.
-    uint64_t size = 0;
-    if (li->getType()->isSized())
-      aa->getTypeStoreSize(li->getType());
-    return !aliasSetTracker->getAliasSetForPointer(li->getPointerOperand(),
-                                                   size, nullptr).isMod();
+  // not have loop invariant operand ==> not safe
+  if (!currLoop->hasLoopInvariantOperands(inst)) {
+    return false;
   }
 
-  return (inst->isBinaryOp() || inst->isCast() || inst->getOpcode() == Instruction::Select ||
-      inst->getOpcode() == Instruction::GetElementPtr || inst->getOpcode() == Instruction::FCmp ||
-      inst->getOpcode() == Instruction::ICmp);
-}
-
-bool SpecLICM::guaranteedToExecute(Instruction *inst) {
-  // If the basic block enclosing the given instruction dominates all
-  // the exit blocks of the current loop, the instruction is guaranteed
-  // to be executed.
-  SmallVector<BasicBlock *, 8> exitBlocks;
-  currLoop->getExitBlocks(exitBlocks);
-  if (exitBlocks.empty())
+  // if it's recorded ==> not safe
+  if (insertedLds.count(inst)) {  // LLVM DenseSet can use count.
     return false;
+  }
 
-  for (auto &exitBB : exitBlocks) {
-    if (!domTree->dominates(inst->getParent(), exitBB))
-      return false;
+  // neither can be safely speculatively executed nor guaranteed to be executed ==> not safe
+  if (!isSafeToSpeculativelyExecute(inst, dl) && !guaranteedToExecute(inst)) {
+    return false;
   }
 
   return true;
 }
 
+void SpecLICM::hoistInst(Instruction *inst) {
+  // PA5: Implement
+  // move to right before preheader BB's terminator
+  inst->moveBefore(preheader->getTerminator());
+  changed = true;
+}
+
+bool SpecLICM::canHoistInst(Instruction *inst) {
+  // PA5: Implement
+  if (LoadInst *LI = dyn_cast<LoadInst>(inst)) {
+    if (!LI->isUnordered()) {
+      return false;
+    }
+
+    Value* op = LI->getPointerOperand();
+    uint64_t loadSize = dl->getTypeStoreSize(LI->getType());
+    // not point to constant memory
+    // exists conflict
+    if (!aa->pointsToConstantMemory(op) && 
+        aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
+      return false;
+    }
+
+    return true;
+  }
+  else if (isa<BinaryOperator>(inst) ||
+           isa<CastInst>(inst) ||
+           isa<SelectInst>(inst) ||
+           isa<GetElementPtrInst>(inst) ||
+           isa<CmpInst>(inst)) {
+            return true;
+           }
+
+  return false;
+}
+
+bool SpecLICM::guaranteedToExecute(Instruction *inst) {
+  // PA5: Implement
+  SmallVector<BasicBlock*, 8> exitBB;
+  currLoop->getExitBlocks(exitBB);
+  for (auto *bb : exitBB) {
+    // if inst does not dominate exit bb
+    if (!domTree->dominates(inst->getParent(), bb)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void SpecLICM::specHoistInst(llvm::LoadInst *li) {
   assert(enableSpecLICM && "must enable SpecLICM");
+  // PA5: Implement
 
-  // Only do it when the pointer operand of the load is defined outside the current loop.
+  auto &ctx = li->getContext();
+  Function *F = li->getParent()->getParent();
+  Value* op = li->getPointerOperand();
+  uint64_t loadSize = dl->getTypeStoreSize(li->getType());
 
-  // Speculatively hoist the load if it is must | may aliased with stores in the loop.
-  // If so, we need to insert some run-time fix-up code at the header of the current
-  // loop.
-  uint64_t size = 0;
-  if (li->getType()->isSized())
-    aa->getTypeStoreSize(li->getType());
-  AliasSet &as = aliasSetTracker->getAliasSetForPointer(li->getPointerOperand(),
-                                                        size, nullptr);
-  if (as.isMod()) {
-    LLVMContext &ctx = li->getContext();
-    // Create a new header block if absent.
-    BasicBlock *newHeader = BasicBlock::Create(ctx, "alias.header", header->getParent(), header);
-    // Create a fix-up basic block.
-    BasicBlock *fixupBB = BasicBlock::Create(ctx, "alias.fixup", header->getParent(), header);
-
-    // Replace all uses of the header block by the new header block.
+  // (1) create new control flow and header
+  // if conflict exists (memory addr is modified during loop)
+  // add alias.header & alias.fixup to monitor
+  if (aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr).isMod()) {
+    BasicBlock *newHeader = BasicBlock::Create(ctx, "alias.header", F, header);  // inserted before header of loop
+    BasicBlock *fixupBB = BasicBlock::Create(ctx, "alias.fixup", F, header);
     header->replaceAllUsesWith(newHeader);
-    currLoop->addBasicBlockToLoop(newHeader, loopInfo->getBase());
-    currLoop->addBasicBlockToLoop(fixupBB, loopInfo->getBase());
-    currLoop->moveToHeader(newHeader);
 
-    // Fix those broken phi nodes in the old header due to inserted alias.header
-    fixPhiNodes(newHeader);
-
-    // Branch to the old header at the end of fixup basic block.
-    BranchInst::Create(header, fixupBB);
-
-    // Create a phi node to hold the comparison result in the new loop header
-    Type *ty = Type::getInt1Ty(ctx);
-    AllocaInst *ai = new AllocaInst(ty,
-                                    ConstantInt::get(Type::getInt32Ty(ctx), 1),
-                                    "alias", preheader->getTerminator());
-    aliasAI.push_back(ai);
-
-    // insert "alias.phi = 0" at the end of the preheader.
-    Value *zero = Constant::getNullValue(ty);
-    new StoreInst(zero, ai, preheader->getTerminator());
-    // Insert "alias = 0" to the fixup block.
-    new StoreInst(zero, ai, fixupBB->getTerminator());
-
-    // Branch to the old header and fixup block depending on the comparison result.
-    LoadInst *ldCond = new LoadInst(ai, "alias.ld", newHeader);
-    Instruction *neg = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_EQ, ldCond, zero, "neg.alias", newHeader);
-    BranchInst::Create(header, fixupBB, neg, newHeader);
-
-    SmallVector<Instruction *, 8> stack;
-    DenseSet<Instruction *> visited;
-    for (auto I = as.begin(), E = as.end(); I != E; ++I) {
-      stack.clear();
-      visited.clear();
-      Instruction *aliased = dyn_cast_or_null<Instruction>(I.getPointer());
-      if (aliased) {
-        switch (aliased->getOpcode()) {
-          case Instruction::Store: {
-            StoreInst *si = dyn_cast<StoreInst>(aliased);
-            // Create a comparison before the store.
-            Instruction *cmp = CmpInst::Create(Instruction::ICmp,
-                                               ICmpInst::ICMP_EQ,
-                                               li->getPointerOperand(),
-                                               si->getPointerOperand(),
-                                               "alias.cmp", si);
-            new StoreInst(cmp, ai, si);
-            break;
+    TerminatorInst *TI = header->getTerminator();
+    for (unsigned i = 0; i < TI->getNumSuccessors(); ++i) {
+      BasicBlock *succ = TI->getSuccessor(i);
+      for (BasicBlock::iterator II = succ->begin(); isa<PHINode>(II); ++II) {
+        PHINode *PN = cast<PHINode>(II);
+        // if source of this PhiNode is mischanged as newHeader, change it back to header
+        for (unsigned j = 0; j < PN->getNumIncomingValues(); ++j) {
+          if (PN->getIncomingBlock(j) == newHeader) {
+            PN->setIncomingBlock(j, header);
           }
-          case Instruction::GetElementPtr:
-          case Instruction::IntToPtr:
-          case Instruction::BitCast: {
-            // The value produced by gep might be indirectly consumed by a store.
-            // Identify the following patterna.
-            //   %arrayidx1 = getelementptr inbounds i32* %a, i64 %idxprom
-            //   store i32 %res.0, i32* %arrayidx1, align 4
-            //
-            //   %2 = inttoptr i64 %add to i32*
-            //   store i32 %res.0, i32* %2, align 4
-            // Then insert a comparison instruction after the store.
-            stack.push_back(aliased);
-            visited.insert(aliased);
-            visited.insert(li);
-            while (!stack.empty()) {
-              Instruction *inst = stack.back();
-              stack.pop_back();
-              // Test if inst is a store
-              if (StoreInst *si = dyn_cast<StoreInst>(inst)) {
-                // Create a comparison before the store.
-                Instruction *cmp = CmpInst::Create(Instruction::ICmp,
-                                                   ICmpInst::ICMP_EQ,
-                                                   li->getPointerOperand(),
-                                                   si->getPointerOperand(),
-                                                   "alias.cmp", si);
-                new StoreInst(cmp, ai, si);
-              }
-              for (Use &u : inst->uses()) {
-                Instruction *user = dyn_cast<Instruction>(u.getUser());
-                if (user && !visited.count(user) && dyn_cast_or_null<StoreInst>(user)) {
-                  visited.insert(user);
-                  stack.push_back(user);
-                }
-              }
-            }
-            break;
-          }
-          default:break;
         }
       }
     }
 
-    hoistInst(li);
+    currLoop->addBasicBlockToLoop(newHeader, loopInfo->getBase());
+    currLoop->addBasicBlockToLoop(fixupBB, loopInfo->getBase());
+    currLoop->moveToHeader(newHeader);
 
-    // Q2: dependent-chain hoisting. Collect loop-body instructions that
-    // transitively depend on `li` and whose other operands are all
-    // loop-invariant, then move them to the preheader. fillFixupBlocks
-    // will clone the chain into fixupBB, rewire operands via old2New,
-    // and create alloca slots for remaining loop-body uses (promoteMemToReg
-    // converts those to PHIs at the end of runOnLoop).
-    // Skip for inner loops: moving instructions into a preheader that
-    // sits inside an outer loop invalidates the outer LoopInfo/DomTree.
-    if (!currLoop->getParentLoop()) {
-      std::vector<Instruction *> chain = collectDependentChain(li);
-      for (Instruction *dep : chain) {
-        dep->moveBefore(preheader->getTerminator());
+
+    // (2) fix PhiNodes and CFG
+    fixPhiNodes(newHeader);
+    BranchInst::Create(header, fixupBB);
+
+
+    // (3) Stack allocation for variable "alias"
+    AllocaInst *alias = new AllocaInst(
+      Type::getInt1Ty(ctx),
+      ConstantInt::get(Type::getInt32Ty(ctx), 1), 
+      "alias", 
+      preheader->getTerminator()
+    );
+    aliasAI.push_back(alias);    // for later use in PromoteMemToReg 
+
+
+    // (4) Use StoreInst, LoadInst to operate memory in stack
+    Value *constZero = Constant::getNullValue(Type::getInt1Ty(ctx));
+    new StoreInst(constZero, alias, preheader->getTerminator());
+    new StoreInst(constZero, alias, fixupBB->getTerminator());
+
+    LoadInst *aliasVal = new LoadInst(alias, "alias.ld", newHeader);
+    // insertpoint, operator, op1, op2
+    ICmpInst *cmp = new ICmpInst(*newHeader, CmpInst::ICMP_EQ, aliasVal, constZero, "neg.alias");
+    BranchInst::Create(header, fixupBB, cmp, newHeader);  // if-true, if-false, cmp, branchpoint
+
+
+    // (5) insert checking code after each store that may conflict with the input load
+    AliasSet &AS = aliasSetTracker->getAliasSetForPointer(op, loadSize, nullptr);
+    std::vector<Instruction*> targetSI;
+    std::queue<Instruction*> worklist;
+    // identify Instructions in AliasSet
+    for (auto I = AS.begin(), E = AS.end(); I != E; ++I) {
+      Instruction *aliased = dyn_cast_or_null<Instruction>(I.getPointer());
+      if (Instruction *inst = dyn_cast<Instruction>(aliased)) {
+        worklist.push(inst);
       }
     }
+    // queue-based recursive traversal (recursive-DFS-like)
+    while (!worklist.empty()) {
+      Instruction *curr = worklist.front();
+      worklist.pop();
 
-    // Now change the header to the new header
-    header = newHeader;
+      if (isa<StoreInst>(curr)) {
+        targetSI.push_back(curr);
+      }
+      else if (isa<GetElementPtrInst>(curr) || isa<IntToPtrInst>(curr) || isa<BitCastInst>(curr)) {
+        // track def-use chain
+        for (User *U : curr->users()) {
+          if (Instruction *UI = dyn_cast<Instruction>(U)) {
+            worklist.push(UI);
+          }
+        }
+      }
+    }
+    // icmp BEFORE the store, store-to-alias AFTER the store
+    for (auto *inst : targetSI) {
+      StoreInst *SI = dyn_cast<StoreInst>(inst);
+      
+      Value *cmpConflict = new ICmpInst(SI, ICmpInst::ICMP_EQ, op, SI->getPointerOperand(), "alias.cmp");
+      Instruction *I = SI->getNextNode();
+      if (I)
+        new StoreInst(cmpConflict, alias, I);   // store to alias
+      else
+        new StoreInst(cmpConflict, alias, SI->getParent()->getTerminator());
+    }
 
+
+    // (6) execute actual hoisting of code
+    hoistInst(li);
+    if (currLoop->getParentLoop() == nullptr) {  // i.e.  current loop is not nested inside another loop
+      std::vector<Instruction*> depChain;
+      depChain = collectDependentChain(li);
+      for (Instruction *depInst : depChain) {
+        depInst->moveBefore(preheader->getTerminator());
+      }
+    }
+    this->header = newHeader;
     fillFixupBlocks(li, fixupBB);
   }
 }
 
 void SpecLICM::fillFixupBlocks(LoadInst *ld, BasicBlock *fixupBB) {
-  std::vector<Instruction *> stack;
-  DenseSet<Instruction *> visited;
-  BasicBlock &front = header->getParent()->front();
-  DenseMap<Value *, Instruction *> old2New;
+  // PA5: Implement
+  std::stack<Instruction*> st;
+  DenseMap<Value*, Value*> instMapping;
+  st.push(ld);
 
-  LLVMContext &ctx = ld->getContext();
-  Instruction *term = fixupBB->getTerminator();
-  assert(term && "must have a terminator in fixup block");
+  while (!st.empty()) {
+    Instruction *inst = st.top();
+    st.pop();
 
-  stack.clear();
-  visited.clear();
-  old2New.clear();
-  stack.push_back(ld);
-  while (!stack.empty()) {
-    auto inst = stack.back();
-    visited.insert(inst);
-    Instruction *duplica = inst->clone();
-    old2New[inst] = duplica;
-    stack.pop_back();
-    duplica->insertBefore(term);
+    Instruction *dup = inst->clone();
+    dup->insertBefore(fixupBB->getTerminator());
 
-    for (unsigned i = 0, e = duplica->getNumOperands(); i != e; ++i) {
-      Value *old = duplica->getOperand(i);
-      if (old2New.count(old))
-        duplica->replaceUsesOfWith(old, old2New[old]);
+    instMapping[inst] = dup;
+
+    for (unsigned i = 0 ; i < dup->getNumOperands() ; i++) {
+      // Update dup’ operands from the original instructions
+      // to the replicas in fixupBB
+      // Here, dup might use the values produced
+      // by the ld and its dependents (users)
+      Value* op = dup->getOperand(i);
+      if (instMapping.count(op)) {
+        dup->setOperand(i, instMapping[op]); 
+      }
     }
 
-    std::for_each(inst->use_begin(), inst->use_end(), [&](Use &u) {
-      Instruction *user = dyn_cast_or_null<Instruction>(u.getUser());
-      if (!visited.count(user) && user->getParent() == preheader) {
-        visited.insert(user);
-        stack.push_back(user);
+    for (User *U : inst->users()) {
+      Instruction *user = dyn_cast<Instruction>(U);
+      // if user is in preheader
+      if (!user) continue;
+      if (user->getParent() == preheader) {
+        st.push(user);
       }
-    });
+    }
 
-    // Create an alloca if inst is used inside the current loop.
     AllocaInst *ai = nullptr;
-    for (Use &u : inst->uses()) {
-      Instruction *UI = dyn_cast<Instruction>(u.getUser());
-      if (UI && UI->getParent() != preheader) {
-        if (!ai) {
-          ai = new AllocaInst(inst->getType(),
-                              ConstantInt::get(Type::getInt32Ty(ctx),
-                                               inst->getType()->getScalarSizeInBits() / 8),
-                              inst->getName() + ".alloca", front.getFirstInsertionPt());
-          // For transforming it into SSA form.
-          aliasAI.push_back(ai);
-        }
-        // Save the value produced by inst into the stack-allocated location at both
-        // preheader and fixup block.
-        new StoreInst(inst, ai, std::next(BasicBlock::iterator(inst)));
-        new StoreInst(duplica, ai, term);
 
-        // Insert a load right before the use of the inst.
-        LoadInst *li = new LoadInst(ai, inst->getName() + ".ld", BasicBlock::iterator(UI));
-        // Ensure not reordering this new load.
+    SmallVector<User*, 8> userList(inst->users());
+    for (User *U : userList) {
+      Instruction *user = dyn_cast<Instruction>(U);
+      if (user->getParent() != preheader && user->getParent() != fixupBB) {
+        if (!ai) {
+          ai = new AllocaInst(
+            inst->getType(), 
+            ConstantInt::get(Type::getInt32Ty(inst->getContext()), 1),
+            inst->getName() + ".alloca", 
+            preheader->getTerminator()
+          );
+          aliasAI.push_back(ai);
+
+          // new StoreInst(inst, ai, "after inst")
+          new StoreInst(inst, ai, inst->getNextNode());
+          // new StoreInst(dup, ai, "terminator of fixupBB")
+          new StoreInst(dup, ai, fixupBB->getTerminator());
+        }
+
+        // li = new LoadInst(ai, "before user")
+        LoadInst *li = new LoadInst(ai, inst->getName() + ".ld", user);
         insertedLds.insert(li);
-        UI->replaceUsesOfWith(inst, li);
+        user->replaceUsesOfWith(inst, li);  // Update user's dependency from inst to the new LoadInst li
       }
     }
+    
   }
 }
 
 void SpecLICM::fixPhiNodes(BasicBlock *newHeader) {
-  auto insertPos = newHeader->begin();
-  while (insertPos != newHeader->end() && dyn_cast<PHINode>(insertPos))
-    ++insertPos;
+  // PA5: Implement
+  BasicBlock::iterator insertPos = newHeader->getFirstNonPHI();
 
-  for (auto I = header->begin(); I != header->end() && dyn_cast<PHINode>(I);) {
-    auto pos = std::next(I);
-    I->removeFromParent();
-    newHeader->getInstList().insert(insertPos, I);
-    I = pos;
+  for (BasicBlock::iterator it = header->begin() ; it != header->end() ; ) {
+    Instruction *i = &*it;
+    ++it;    // before changing, iterate next position first
+    if (PHINode *pn = dyn_cast<PHINode>(i)) {
+      pn->removeFromParent();
+      newHeader->getInstList().insert(insertPos, pn);   // insertPos, Instruction*
+    }
+    else {
+      // PHInode must be in top of BB
+      break;
+    }
   }
 }
 
 void SpecLICM::promoteMemToReg() {
+  // PA5: Implement
   if (!aliasAI.empty()) {
-    domTree->recalculate(*fn);
-    llvm::PromoteMemToReg(makeArrayRef(aliasAI), *domTree, aliasSetTracker);
+    Function *F = aliasAI.front()->getParent()->getParent();
+    domTree->recalculate(*F);   //  reconstruct the dominator tree of the input function fn
+    llvm::PromoteMemToReg(aliasAI, *domTree);
   }
 }
 
 void SpecLICM::computeFrequentPath(Loop *L) {
+  // PA5: Implement
   frequentPath.clear();
-  BasicBlock *hdr = L->getHeader();
-  frequentPath.insert(hdr);
-  BasicBlock *cur = hdr;
+  BasicBlock *loopHeader = L->getHeader();
+  frequentPath.insert(loopHeader);
+  BasicBlock *cur = loopHeader;
 
-  // Walk the ≥80% successor chain until we reach the backedge, leave the
-  // loop, or lose majority confidence (BPI::isEdgeHot reports no hot edge).
   while (true) {
-    TerminatorInst *term = cur->getTerminator();
-    unsigned n = term->getNumSuccessors();
-    if (n == 0) break;
-
     BasicBlock *next = nullptr;
-    if (n == 1) {
-      next = term->getSuccessor(0);
-    } else {
-      // Ask BPI which successor (if any) is hot (>4/5 = 80%).
-      for (unsigned i = 0; i < n; ++i) {
-        BasicBlock *succ = term->getSuccessor(i);
+    TerminatorInst *ter = cur->getTerminator();
+    unsigned numSuccs = ter->getNumSuccessors();
+
+    if (numSuccs == 1) {
+      next = ter->getSuccessor(0);
+    }
+    else if (numSuccs > 1) {
+      for (unsigned i = 0 ; i < numSuccs ; i++) {
+        BasicBlock *succ = ter->getSuccessor(i);
         if (bpi->isEdgeHot(cur, succ)) {
           next = succ;
           break;
         }
       }
-      if (!next) break;                             // no ≥80% majority
     }
 
-    if (next == hdr) break;                         // reached the backedge
-    if (!L->contains(next)) break;                  // left the loop
-    if (!frequentPath.insert(next).second) break;   // cycle guard
+    if (!next) {
+      break;
+    }
+
+    // 1. Reaches the backedge: next == header
+    // 2. Leaves the current loop: !currLoop->contains(next)
+    // 3. Creates a cycle: already in frequentPath
+    bool isCycle = false;
+    for (auto *BB : frequentPath) {
+      if (BB == next) {
+        isCycle = true;
+        break;
+      }
+    }
+    if (next == loopHeader || !currLoop->contains(next) || isCycle) {
+      break;
+    }
+
+    // Otherwise, insert next into frequentPath, update cur to next
+    frequentPath.insert(next);
     cur = next;
   }
 }
 
 bool SpecLICM::anyConflictOnFrequentPath(LoadInst *ld) {
-  if (frequentPath.empty()) return false;
-  Value *addr = ld->getPointerOperand();
-  for (BasicBlock *bb : frequentPath) {
-    for (Instruction &I : *bb) {
-      StoreInst *st = dyn_cast<StoreInst>(&I);
-      if (!st) continue;
-      Value *sa = st->getPointerOperand();
-      // Trivial case: same SSA value.
-      if (sa == addr) return true;
-      // Syntactic GEP equality. The spec assumes no pointer aliasing, so we
-      // only need to catch explicit writes to the same derived address.
-      auto *g1 = dyn_cast<GetElementPtrInst>(addr);
-      auto *g2 = dyn_cast<GetElementPtrInst>(sa);
-      if (g1 && g2 &&
-          g1->getPointerOperand() == g2->getPointerOperand() &&
-          g1->getNumIndices() == g2->getNumIndices()) {
-        bool equal = true;
-        for (unsigned i = 0, e = g1->getNumIndices(); i < e; ++i) {
-          if (g1->getOperand(i + 1) != g2->getOperand(i + 1)) {
-            equal = false;
-            break;
-          }
+  // PA5: Implement
+  if (frequentPath.empty()) {
+    return false;
+  }
+
+  Value* opLoad = ld->getPointerOperand();
+
+  for (auto *bb : frequentPath) {
+    for (auto &inst : *bb) {
+      if (!isa<StoreInst>(&inst)) {
+        continue;
+      }
+      StoreInst *SI = dyn_cast<StoreInst>(&inst);
+      Value *opStore = SI->getPointerOperand();
+      if (opLoad == opStore) {
+        return true;
+      }
+
+      GetElementPtrInst *gepStore = dyn_cast<GetElementPtrInst>(opStore);
+      GetElementPtrInst *gepLoad = dyn_cast<GetElementPtrInst>(opLoad);
+      if (gepStore && gepLoad) {
+        if (gepStore->isIdenticalTo(gepLoad)) {
+          return true;
         }
-        if (equal) return true;
       }
     }
   }
+  
   return false;
 }
 
