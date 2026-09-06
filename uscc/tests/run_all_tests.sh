@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PASS=0
 FAIL=0
 TOTAL=0
+RESULTS=()
 
 echo "========================================"
 echo "  Running all tests"
@@ -31,9 +32,11 @@ for pa_dir in "$SCRIPT_DIR"/pa*; do
 
         if [ $exit_code -eq 0 ]; then
             PASS=$((PASS + 1))
+            RESULTS+=("  [PASS] [$pa_name] $test_name")
             echo ">>> RESULT: PASSED"
         else
             FAIL=$((FAIL + 1))
+            RESULTS+=("  [FAIL] [$pa_name] $test_name (exit code $exit_code)")
             echo ">>> RESULT: FAILED (exit code $exit_code)"
         fi
         echo ""
@@ -41,6 +44,11 @@ for pa_dir in "$SCRIPT_DIR"/pa*; do
 done
 
 echo "========================================"
+echo "  Test Results Breakdown:"
+for res in "${RESULTS[@]}"; do
+    echo "$res"
+done
+echo "----------------------------------------"
 echo "  Summary: $PASS/$TOTAL passed, $FAIL failed"
 echo "========================================"
 exit $FAIL
