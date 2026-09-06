@@ -84,28 +84,31 @@ bool CommonSubexpressionElimination::runOnFunction(llvm::Function &F) {
     AvailableExpressions &ae = getAnalysis<AvailableExpressions>();
     bool globalChanged = false;
 
-    // PA3: Implement
+    // Main loop for iterative CSE + cleanup
     while (true) {
-        // MARK step
         bool changedInIter = false;
         vector<Instruction*> exprsToDelete;
         vector<LoadInst*> DeadLoads;
 
-        for (auto &bb : F) {
-            vector<Instruction*> available = ae.getInSet(&bb);   // getInSet: get available Instructions in BB
-            for (auto &inst : bb) {
-                if (isa<BinaryOperator>(&inst) || isa<CmpInst>(&inst)) {
-                    for (auto &prevInst : available) {    // Instruction *
-                        if (Search(&inst, prevInst) && &inst != prevInst) {
-                            BasicBlock::iterator insertionPoint = std::prev(BasicBlock::iterator(&inst));
+        // 1) Mark Redundant Expressions
+        // vector<Instruction*> allExprs;
+        for (auto &BB : F) {
+            std::vector<Instruction*> localAvailable = ae.getInSet(&BB);
+            for (auto &Inst : BB) {
+                if (isa<BinaryOperator>(&Inst) || isa<CmpInst>(&Inst)) {
+                    for (Instruction* prevInst : localAvailable) {
+                        if (Search(&Inst, prevInst) && (&Inst != prevInst)) {
+                            Instruction* insertionPoint =&*std::prev(BasicBlock::iterator(Inst)); 
                             if (ae.isAvailableAfter(*prevInst, *insertionPoint)) {
-                                for (auto op = inst.op_begin() ; op != inst.op_end() ; op++) {
-                                    if (LoadInst *LI = dyn_cast<LoadInst>(op->get())) {
+                                // Identify dead loads BEFORE replacing uses
+                                for (User::op_iterator op = Inst.op_begin(), E = Inst.op_end(); op != E; ++op) {
+                                    if (LoadInst* LI = dyn_cast<LoadInst>(op->get())) {
                                         DeadLoads.push_back(LI);
                                     }
                                 }
-                                inst.replaceAllUsesWith(prevInst);
-                                exprsToDelete.push_back(&inst);
+                                // currentInst->replaceAllUsesWith(originalExpr);
+                                Inst.replaceAllUsesWith(prevInst);
+                                exprsToDelete.push_back(&Inst);
                                 break;
                             }
                         }
@@ -115,33 +118,36 @@ bool CommonSubexpressionElimination::runOnFunction(llvm::Function &F) {
         }
 
 
-        // SWEEP step
-        for (auto &inst : exprsToDelete) {    // Instruction *
+        // 2) Sweep (Delete Redundant Expressions)
+        // This MUST happen before checking use_empty() on loads
+        for (Instruction* inst : exprsToDelete) {
             inst->eraseFromParent();
         }
 
-        vector<Instruction*> LoadsToDelete;   
-        for (auto &LI : DeadLoads) {          // Instruction *
+        // 3) Sweep (Delete Dead Loads)
+        // Now that the user (%add2) is gone, check the loads we identified
+        set<Instruction*> LoadsToDelete;
+        for (LoadInst* LI : DeadLoads) {
+            // Check if the load now truly has no users
             if (LI->use_empty()) {
-                LoadsToDelete.push_back(LI);
+                LoadsToDelete.insert(LI);
             }
         }
-        for (auto &inst : LoadsToDelete) {
+
+        for (Instruction* inst : LoadsToDelete) {
             inst->eraseFromParent();
         }
 
-        // check if reached fixed-point
         if (!exprsToDelete.empty()) {
-            changedInIter = true;
+            changedInIter = true; // Mark change occurred
         }
+
         if (changedInIter) {
             globalChanged = true;
-        }
-        else {
+        } else {
             break;
         }
-    }
+    } // End while(true) loop
 
-    
     return globalChanged;
 }

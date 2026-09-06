@@ -154,6 +154,16 @@ struct NaturalLoops : public FunctionPass {
 
 void registerNaturalLoopPasses(llvm::legacy::PassManager& pm);
 
+
+struct CopyPropagation : public llvm::FunctionPass
+{
+	static char ID;
+	CopyPropagation() : FunctionPass(ID) {}
+ 
+	virtual bool runOnFunction(llvm::Function& F) override;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+};
+ 
 void registerAnalysisPasses(llvm::PassRegistry &Registry);
 
 } // opt
@@ -167,4 +177,6 @@ namespace llvm
     FunctionPass* createDCEPass();
     FunctionPass* createAEPass();
     FunctionPass* createCSEPass();
+    FunctionPass* createRedundantPhiRemovalPass();
+	FunctionPass* createCopyPropagationPass();
 }

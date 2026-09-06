@@ -72,75 +72,81 @@ bool Liveness::runOnFunction(Function &F)
     // The OUT set of the last block is empty.
     bb2Out[&endBB] = std::set<StringRef>();
 
-    // PA3: Implement
+    // PA3
     // Step #1: identify program variables.
-    for (auto &bb : F) {
-        for (auto &inst : bb) {
-            if (inst.getOpcode() == llvm::Instruction::Alloca) {
-                if (inst.hasName()) {
-                    namedVars.insert(inst.getName());
-                }
-            }
+    for (auto & BB : F)
+    {
+        for (auto & ins : BB)
+        {
+            if (ins.getOpcode() == Instruction::Alloca)
+                namedVars.insert(ins.getName());
         }
     }
 
     // Step #2: calculate DEF/USE set for each basic block
     std::map<BasicBlock *, std::set<StringRef>> bb2Use, bb2Def;
-    for (auto &bb : F) {
-        set<StringRef> USE = {};
-        set<StringRef> DEF = {};
-        for (auto it = bb.rbegin() ; it != bb.rend() ; it++) {
-            // LoadInst
-            if (LoadInst* LI = dyn_cast_or_null<LoadInst>(&*it)) {
-                if (namedVars.count(LI->getPointerOperand()->getName())) {  // found
-                    USE.insert(LI->getPointerOperand()->getName());
-                    DEF.erase(LI->getPointerOperand()->getName());
-                }
+    for (auto & BB : F)
+    {
+        std::set<StringRef> use;
+        std::set<StringRef> def;
+        for (auto iter = BB.rbegin(); iter != BB.rend(); iter++)
+        {
+            StoreInst * store = dyn_cast_or_null<StoreInst>(&*iter);
+            LoadInst * load = dyn_cast_or_null<LoadInst>(&*iter);
+            if (store && namedVars.find(store->getPointerOperand()->getName()) != namedVars.end())
+            {
+                use.erase(iter->getOperand(1)->getName());
+                def.insert(iter->getOperand(1)->getName());
             }
-            // StoreInst
-            else if (StoreInst* SI = dyn_cast_or_null<StoreInst>(&*it)) {
-                if (namedVars.count(SI->getPointerOperand()->getName())) {  // found
-                    USE.erase(SI->getPointerOperand()->getName());
-                    DEF.insert(SI->getPointerOperand()->getName());
-                }
+            else if (load && namedVars.find(load->getPointerOperand()->getName()) != namedVars.end())
+            {
+                use.insert(iter->getOperand(0)->getName());
+                def.erase(iter->getOperand(0)->getName());
             }
         }
-        
-        // save to bb2Use, bb2Def
-        bb2Use[&bb] = USE;
-        bb2Def[&bb] = DEF;
+        bb2Use[&BB] = use;
+        bb2Def[&BB] = def;
     }
 
     // Step #3: compute post order traversal.
     set<BasicBlock *> visited;
-    deque<BasicBlock *> postorder;
-    computePostOrder(&(F.front()), visited, postorder);
+    std::deque<BasicBlock *> worklist;
+#if 0
+    for (auto &bb : F)
+        worklist.push_back(&bb);
+#else
+    computePostOrder(&F.front(), visited, worklist);
+#endif
 
     // Step #4: iterate over control flow graph of the input function until the fixed point.
     unsigned cnt = 0;
-    bool changed = true;
-    for (auto &bb : F) {
-        bb2In[&bb] = {};
-    }
-    while (changed) {
-        changed = false;
-        for (auto &bb : postorder) {    // BasicBlock *
-            set<StringRef> old_IN = bb2In[bb];
-            // for all direct successor basic block Y
-            // OUT[X] = Union(IN[Y])
-            for (auto it = succ_begin(bb), end = succ_end(bb) ; it != end ; it++) {
-                bb2Out[bb] += bb2In[*it];
-            }
-            // IN[X] = USE[X] + (OUT[X] - DEF[X])
-            bb2In[bb] = bb2Use[bb] + (bb2Out[bb] - bb2Def[bb]);
 
-            // fixed_point check
-            if (old_IN != bb2In[bb]) {
-                changed = true;
-            }
-        }
-        // iteration counter
+    for (auto &i : bb2In)
+        i.second.clear();
+    for (auto &i : bb2Out)
+        i.second.clear();
+
+    bool change = true;
+    while (change)
+    {
         cnt++;
+        change = false;
+        for (auto bb : worklist)
+        {
+            auto & in = bb2In[bb];
+            auto & out = bb2Out[bb];
+            auto & use = bb2Use[bb];
+            auto & def = bb2Def[bb];
+            std::set<StringRef> oldIn = in;
+
+            for (auto iter = succ_begin(bb); iter != succ_end(bb); iter++)
+                out += bb2In[*iter];
+
+            in = use + (out - def);
+
+            if (oldIn != in)
+                change = true;
+        }
     }
 
     // Step #5: output IN/OUT set for each basic block.
@@ -173,32 +179,34 @@ bool Liveness::isDead(llvm::Instruction &inst)
     if (!bb2Out.count(bb))
         return true;
 
-    // PA3: Implement
-    StoreInst *is_SI = dyn_cast<StoreInst>(&inst);
-    if (!is_SI) 
-        return false;    // non Store inst
-    StringRef varName = is_SI->getPointerOperand()->getName();
-    if (!namedVars.count(varName)) 
-        return false;    // other store
-
-    
-    // TODO: Implement
-    set<StringRef> LiveWithinBB = bb2Out[bb];
-    for (auto it = bb->rbegin() ; it != bb->rend() ; it++) {
-        Instruction *curr = &*it;    // current instruction
-        if (curr == &inst) {         // target instruction
-            if (!LiveWithinBB.count(varName))    // not found, so it is dead, return true
-                return true;
-            else return false;
+    // PA3
+    StoreInst * st = dyn_cast_or_null<StoreInst>(&inst);
+    if (st && namedVars.find(st->getPointerOperand()->getName()) != namedVars.end())
+    {
+        auto store = dyn_cast_or_null<StoreInst>(&inst);
+        auto name = store->getPointerOperand()->getName();
+        bool use = false;
+        for (auto iter = std::next(BasicBlock::iterator(inst)); iter != bb->end(); iter++)
+        {
+            StoreInst * store = dyn_cast_or_null<StoreInst>(&*iter);
+            LoadInst * load = dyn_cast_or_null<LoadInst>(&*iter);
+            if (load)
+            {
+                auto useName = load->getPointerOperand()->getName();
+                if (useName == name)
+                {
+                    use = true;
+                    break;
+                }
+            }
+            if (store)
+            {
+                auto useName = store->getPointerOperand()->getName();
+                if (useName == name)
+                    break;
+            }
         }
-        // Update LiveWithinBB by LoadInst, StoreInst
-        if (LoadInst* LI = dyn_cast_or_null<LoadInst>(&*it)) {
-            LiveWithinBB.insert(LI->getPointerOperand()->getName());
-        }
-        else if (StoreInst* SI = dyn_cast_or_null<StoreInst>(&*it)) {
-            LiveWithinBB.erase(SI->getPointerOperand()->getName());
-        }
+        return !bb2Out[bb].count(name) && !use;
     }
-    
     return false;
 }
