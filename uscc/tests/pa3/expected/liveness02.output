@@ -1,14 +1,14 @@
 ********** Live-in/Live-out information **********
-********** Function: bar, analysis iterates 1 times
+********** Function: bar, analysis iterates 2 times
 entry:
   IN:
-  OUT:
+  OUT: a b
 if.then:
-  IN:
-  OUT:
+  IN: a b
+  OUT: res
 if.end:
-  IN:
+  IN: res
   OUT:
 if.else:
-  IN:
-  OUT:
+  IN: a b
+  OUT: res

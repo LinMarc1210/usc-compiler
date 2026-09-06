@@ -1,26 +1,26 @@
 ********** Live-in/Live-out information **********
-********** Function: main, analysis iterates 1 times
+********** Function: main, analysis iterates 2 times
 entry:
   IN:
-  OUT:
+  OUT: b c
 lor.rhs:
-  IN:
+  IN: b
   OUT:
 lor.end:
   IN:
   OUT:
 and.rhs:
-  IN:
-  OUT:
+  IN: b c
+  OUT: b
 and.end:
-  IN:
-  OUT:
+  IN: b
+  OUT: b
 if.then:
   IN:
-  OUT:
+  OUT: result
 if.end:
-  IN:
+  IN: result
   OUT:
 if.else:
   IN:
-  OUT:
+  OUT: result

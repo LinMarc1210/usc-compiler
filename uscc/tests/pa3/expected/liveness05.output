@@ -1,11 +1,11 @@
 ********** Live-in/Live-out information **********
-********** Function: bar, analysis iterates 1 times
+********** Function: bar, analysis iterates 2 times
 entry:
   IN:
-  OUT:
+  OUT: i
 if.then:
-  IN:
-  OUT:
+  IN: i
+  OUT: i
 if.end:
-  IN:
+  IN: i
   OUT:

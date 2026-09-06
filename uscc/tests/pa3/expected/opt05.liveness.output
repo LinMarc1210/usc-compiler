@@ -1,14 +1,14 @@
 ********** Live-in/Live-out information **********
-********** Function: main, analysis iterates 1 times
+********** Function: main, analysis iterates 2 times
 entry:
   IN:
-  OUT:
+  OUT: i letter
 while.cond:
-  IN:
-  OUT:
+  IN: i letter
+  OUT: i letter
 while.body:
-  IN:
-  OUT:
+  IN: i letter
+  OUT: i letter
 while.end:
   IN:
   OUT:

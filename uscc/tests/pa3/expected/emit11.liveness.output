@@ -1,29 +1,29 @@
 ********** Live-in/Live-out information **********
-********** Function: main, analysis iterates 1 times
+********** Function: main, analysis iterates 3 times
 entry:
   IN:
-  OUT:
+  OUT: x y
 while.cond:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y
 and.rhs:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y
 and.end:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y
 while.body:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y
 while.end:
   IN:
   OUT:
 if.then:
-  IN:
-  OUT:
+  IN: y
+  OUT: x y
 if.end:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y
 if.else:
-  IN:
-  OUT:
+  IN: x y
+  OUT: x y

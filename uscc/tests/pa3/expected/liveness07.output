@@ -1,30 +1,30 @@
 ********** Live-in/Live-out information **********
-********** Function: partition, analysis iterates 1 times
+********** Function: partition, analysis iterates 3 times
 entry:
   IN:
-  OUT:
+  OUT: array i pivotVal right storeIdx
 while.cond:
-  IN:
-  OUT:
+  IN: array i pivotVal right storeIdx
+  OUT: array i pivotVal right storeIdx
 while.body:
-  IN:
-  OUT:
+  IN: array i pivotVal right storeIdx
+  OUT: array i pivotVal right storeIdx
 while.end:
-  IN:
+  IN: array right storeIdx
   OUT:
 if.then:
-  IN:
-  OUT:
+  IN: array i pivotVal right storeIdx
+  OUT: array i pivotVal right storeIdx
 if.end:
-  IN:
-  OUT:
+  IN: array i pivotVal right storeIdx
+  OUT: array i pivotVal right storeIdx
 ********** Live-in/Live-out information **********
-********** Function: quicksort, analysis iterates 1 times
+********** Function: quicksort, analysis iterates 2 times
 entry:
   IN:
-  OUT:
+  OUT: array left right
 if.then:
-  IN:
+  IN: array left right
   OUT:
 if.end:
   IN:
