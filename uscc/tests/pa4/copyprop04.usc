@@ -1,0 +1,16 @@
+int foo(int n)
+{
+    int arr[5];
+    int x;
+    arr[n] = 10;
+    x = arr[n];
+    printf("%d\n", x);
+    return 0;
+}
+
+int main()
+{
+    int r;
+    r = foo(2);
+    return 0;
+}

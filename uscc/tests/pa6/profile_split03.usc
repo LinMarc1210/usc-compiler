@@ -1,0 +1,45 @@
+// profile_split03.usc
+// Hot loop containing an if/else that creates an intra-hot-region
+// join. Under -profile-split, Rule 3 should coalesce splits inserted around
+// the intra-body join (both sides hot) so no COPYs survive inside
+// the loop. The cold entry->loop split is kept.
+// Expected output: 10000
+int main()
+{
+	int a;
+	int b;
+	int c;
+	int d;
+	int i;
+	int sum;
+	int alt;
+
+	// cold
+	a = 10;
+	b = 20;
+	c = 30;
+	d = 40;
+
+	alt = 0;
+	i = 0;
+	sum = 0;
+
+	// hot: alternating-branch body
+	while (i < 200)
+	{
+		if (alt == 0)
+		{
+			sum = sum + a + c;
+			alt = 1;
+		}
+		else
+		{
+			sum = sum + b + d;
+			alt = 0;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

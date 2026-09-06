@@ -1,0 +1,10 @@
+// ssa_simple_var.usc
+// Tests simple variable read/write (requires SSA readVariable)
+
+int main()
+{
+	int x = 5;
+	printf("%d\n", x);
+
+	return 0;
+}

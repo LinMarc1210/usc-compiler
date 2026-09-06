@@ -1,0 +1,56 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [2 x i32], align 8
+  %0 = getelementptr inbounds [2 x i32]* %arr, i32 0, i32 0
+  %1 = getelementptr inbounds i32* %0, i32 0
+  store i32 5, i32* %1
+  %2 = getelementptr inbounds i32* %0, i32 1
+  store i32 0, i32* %2
+  %3 = getelementptr inbounds i32* %0, i32 0
+  %4 = load i32* %3
+  %5 = getelementptr inbounds i32* %0, i32 0
+  %alias.cmp = icmp eq i32* %3, %5
+  br label %alias.header
+
+alias.header:                                     ; preds = %if.end, %entry
+  %.alloca.0 = phi i32 [ %4, %entry ], [ %.alloca.0., %if.end ]
+  %alias.0 = phi i1 [ false, %entry ], [ %alias.2, %if.end ]
+  %Phi29 = phi i32 [ 0, %entry ], [ %add, %if.end ]
+  %Phi8 = phi i32 [ 0, %entry ], [ %add5, %if.end ]
+  %neg.alias = icmp eq i1 %alias.0, false
+  %6 = load i32* %3
+  %.alloca.0. = select i1 %neg.alias, i32 %.alloca.0, i32 %6
+  %alias.0. = select i1 %neg.alias, i1 %alias.0, i1 false
+  %add = add i32 %Phi29, %.alloca.0.
+  %div = sdiv i32 %Phi8, 4
+  %mul = mul i32 %div, 4
+  %sub = sub i32 %Phi8, %mul
+  %eq = icmp eq i32 %sub, 0
+  br i1 %eq, label %if.then, label %if.end, !prof !0
+
+for.end:                                          ; preds = %if.end
+  %Phi2.lcssa = phi i32 [ %add, %if.end ]
+  %7 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %8 = call i32 (i8*, ...)* @printf(i8* %7, i32 %Phi2.lcssa)
+  ret i32 0
+
+if.then:                                          ; preds = %alias.header
+  %add3 = add i32 %Phi8, 1
+  store i32 %add3, i32* %5
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %alias.header
+  %alias.2 = phi i1 [ %alias.cmp, %if.then ], [ %alias.0., %alias.header ]
+  %add5 = add i32 %Phi8, 1
+  %lt = icmp slt i32 %add5, 5
+  br i1 %lt, label %alias.header, label %for.end, !prof !1
+}
+
+!0 = metadata !{metadata !"branch_weights", i32 2, i32 3}
+!1 = metadata !{metadata !"branch_weights", i32 5, i32 1}

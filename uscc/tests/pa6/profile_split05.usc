@@ -1,0 +1,44 @@
+// profile_split05.usc
+// Hot main loop with a rarely-executed error-handling branch. Some
+// variables are used only on the cold branch. Under -profile-split, the
+// hot/cold boundary around the error branch preserves the split
+// (Rule 3) so cold-only values can spill without affecting the hot
+// main loop's register assignment.
+// Expected output: 8585
+int main()
+{
+	int a;
+	int b;
+	int c;
+	int err1;
+	int err2;
+	int i;
+	int sum;
+
+	// cold
+	a = 3;
+	b = 5;
+	c = 7;
+	err1 = 99;
+	err2 = 1001;
+
+	i = 0;
+	sum = 0;
+
+	// hot main loop; error branch runs only once in 500 iterations
+	while (i < 500)
+	{
+		if (i < 499)
+		{
+			sum = sum + a + b + c;
+		}
+		else
+		{
+			sum = sum + err1 + err2;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

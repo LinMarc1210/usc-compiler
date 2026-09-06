@@ -1,0 +1,37 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [2 x i32], align 8
+  %0 = getelementptr inbounds [2 x i32]* %arr, i32 0, i32 0
+  %1 = getelementptr inbounds i32* %0, i32 0
+  store i32 1, i32* %1
+  %2 = getelementptr inbounds i32* %0, i32 1
+  store i32 0, i32* %2
+  %3 = getelementptr inbounds i32* %0, i32 0
+  %4 = getelementptr inbounds i32* %0, i32 0
+  br label %for.body
+
+for.body:                                         ; preds = %entry, %for.body
+  %Phi26 = phi i32 [ 0, %entry ], [ %add, %for.body ]
+  %Phi5 = phi i32 [ 0, %entry ], [ %add4, %for.body ]
+  %5 = load i32* %3
+  %add = add i32 %Phi26, %5
+  %add3 = add i32 %Phi5, 1
+  store i32 %add3, i32* %4
+  %add4 = add i32 %Phi5, 1
+  %lt = icmp slt i32 %add4, 20
+  br i1 %lt, label %for.body, label %for.end, !prof !0
+
+for.end:                                          ; preds = %for.body
+  %Phi2.lcssa = phi i32 [ %add, %for.body ]
+  %6 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %7 = call i32 (i8*, ...)* @printf(i8* %6, i32 %Phi2.lcssa)
+  ret i32 0
+}
+
+!0 = metadata !{metadata !"branch_weights", i32 20, i32 1}

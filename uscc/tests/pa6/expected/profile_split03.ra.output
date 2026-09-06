@@ -1,0 +1,14 @@
+********** USCC REGISTER ALLOCATION **********
+********** Function: main
+Found neighbors = 2 for %vreg9 [320r,420r:0)  0@320r
+Removal: %vreg9 [320r,420r:0)  0@320r
+Found neighbors = 2 for %vreg15 [32r,96B:0)[96B,176r:2)[176r,304B:1)[496B,736B:1)  0@32r 1@176r 2@96B-phi
+Removal: %vreg15 [32r,96B:0)[96B,176r:2)[176r,304B:1)[496B,736B:1)  0@32r 1@176r 2@96B-phi
+Found neighbors = 1 for %vreg16 [16r,96B:0)[96B,256r:3)[544r,624B:2)[688r,736B:1)  0@16r 1@688r 2@544r 3@96B-phi
+Removal: %vreg16 [16r,96B:0)[96B,256r:3)[544r,624B:2)[688r,736B:1)  0@16r 1@688r 2@544r 3@96B-phi
+Found neighbors = 2 for %vreg17 [80r,96B:0)[96B,424r:3)[496B,528r:3)[528r,624B:2)[624B,656r:3)[656r,736B:1)  0@80r 1@656r 2@528r 3@96B-phi
+Removal: %vreg17 [80r,96B:0)[96B,424r:3)[496B,528r:3)[528r,624B:2)[624B,656r:3)[656r,736B:1)  0@80r 1@656r 2@528r 3@96B-phi
+Assigning to physical register ESI: %vreg17 [80r,96B:0)[96B,424r:3)[496B,528r:3)[528r,624B:2)[624B,656r:3)[656r,736B:1)  0@80r 1@656r 2@528r 3@96B-phi
+Assigning to physical register EAX: %vreg16 [16r,96B:0)[96B,256r:3)[544r,624B:2)[688r,736B:1)  0@16r 1@688r 2@544r 3@96B-phi
+Assigning to physical register ECX: %vreg15 [32r,96B:0)[96B,176r:2)[176r,304B:1)[496B,736B:1)  0@32r 1@176r 2@96B-phi
+Assigning to physical register RDI: %vreg9 [320r,420r:0)  0@320r

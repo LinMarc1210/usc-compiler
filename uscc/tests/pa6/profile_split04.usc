@@ -1,0 +1,50 @@
+// profile_split04.usc
+// Straight single-loop program with high register pressure: 12
+// cold-initialized locals all live across the hot loop header.
+// Exercises the saturation-point classifier on real pressure and
+// the profile-split spill-priority formula.
+// Expected output: 7800
+int main()
+{
+	int v1;
+	int v2;
+	int v3;
+	int v4;
+	int v5;
+	int v6;
+	int v7;
+	int v8;
+	int v9;
+	int v10;
+	int v11;
+	int v12;
+	int i;
+	int acc;
+
+	// cold
+	v1 = 1;
+	v2 = 2;
+	v3 = 3;
+	v4 = 4;
+	v5 = 5;
+	v6 = 6;
+	v7 = 7;
+	v8 = 8;
+	v9 = 9;
+	v10 = 10;
+	v11 = 11;
+	v12 = 12;
+
+	i = 0;
+	acc = 0;
+
+	// hot: all 12 values + i are simultaneously live
+	while (i < 100)
+	{
+		acc = acc + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 + v11 + v12;
+		i = i + 1;
+	}
+
+	printf("%d\n", acc);
+	return 0;
+}

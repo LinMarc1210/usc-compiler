@@ -1,0 +1,36 @@
+// fplicm07.usc
+// Four infrequent stores in a nested if structure. The infrequent block
+// contains its own conditional that splits further into two stores.
+int main()
+{
+	int arr[4];
+	int i;
+	int sum;
+
+	arr[0] = 6;
+	arr[1] = 0;
+	arr[2] = 0;
+	arr[3] = 0;
+
+	i = 0;
+	sum = 0;
+	while (i < 100)
+	{
+		sum = sum + arr[0];
+		if (i - ((i / 25) * 25) == 0)
+		{
+			if (i - ((i / 50) * 50) == 0)
+			{
+				arr[0] = i + 1;
+			}
+			else
+			{
+				arr[0] = i * 2;
+			}
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", sum);
+	return 0;
+}

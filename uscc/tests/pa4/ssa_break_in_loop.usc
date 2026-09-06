@@ -1,0 +1,22 @@
+// ssa_break_in_loop.usc
+// Tests break inside while loop with variable (requires PHI at while.end)
+
+int main()
+{
+	int i = 0;
+	int val = 0;
+
+	while (i < 10)
+	{
+		val = val + i;
+		if (i == 5)
+		{
+			break;
+		}
+		i = i + 1;
+	}
+
+	printf("%d\n", val);
+
+	return 0;
+}

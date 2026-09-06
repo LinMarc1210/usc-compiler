@@ -1,0 +1,23 @@
+********** USCC REGISTER ALLOCATION **********
+********** Function: main
+Found neighbors = 5 for %vreg1 [16r,80B:1)[80B,224B:0)[416B,608r:0)[608r,672B:2)[672B,976B:0)  0@80B-phi 1@16r 2@608r
+Removal: %vreg1 [16r,80B:1)[80B,224B:0)[416B,608r:0)[608r,672B:2)[672B,976B:0)  0@80B-phi 1@16r 2@608r
+Found neighbors = 2 for %vreg14 [240r,340r:0)  0@240r
+Removal: %vreg14 [240r,340r:0)  0@240r
+Found neighbors = 4 for %vreg23 [176r,224B:0)[416B,576B:2)[672B,912r:2)[912r,976B:1)  0@176r 1@912r 2@416B-phi
+Removal: %vreg23 [176r,224B:0)[416B,576B:2)[672B,912r:2)[912r,976B:1)  0@176r 1@912r 2@416B-phi
+Found neighbors = 3 for %vreg25 [464r,576B:0)[672B,736r:2)[736r,880B:1)  0@464r 1@736r 2@672B-phi
+Removal: %vreg25 [464r,576B:0)[672B,736r:2)[736r,880B:1)  0@464r 1@736r 2@672B-phi
+Found neighbors = 2 for %vreg26 [544r,576B:0)[672B,688r:2)[784r,880B:1)  0@544r 1@784r 2@672B-phi
+Removal: %vreg26 [544r,576B:0)[672B,688r:2)[784r,880B:1)  0@544r 1@784r 2@672B-phi
+Found neighbors = 3 for %vreg27 [64r,80B:3)[80B,344r:1)[416B,544r:2)[576B,672B:2)[688r,976B:0)  0@688r 1@80B-phi 2@416B-phi 3@64r
+Removal: %vreg27 [64r,80B:3)[80B,344r:1)[416B,544r:2)[576B,672B:2)[688r,976B:0)  0@688r 1@80B-phi 2@416B-phi 3@64r
+Found neighbors = 0 for %vreg28 [32r,224B:0)[416B,976B:0)  0@32r
+Removal: %vreg28 [32r,224B:0)[416B,976B:0)  0@32r
+Assigning to physical register RAX: %vreg28 [32r,224B:0)[416B,976B:0)  0@32r
+Assigning to physical register RSI: %vreg27 [64r,80B:3)[80B,344r:1)[416B,544r:2)[576B,672B:2)[688r,976B:0)  0@688r 1@80B-phi 2@416B-phi 3@64r
+Assigning to physical register ECX: %vreg26 [544r,576B:0)[672B,688r:2)[784r,880B:1)  0@544r 1@784r 2@672B-phi
+Assigning to physical register EDX: %vreg25 [464r,576B:0)[672B,736r:2)[736r,880B:1)  0@464r 1@736r 2@672B-phi
+Assigning to physical register EDI: %vreg23 [176r,224B:0)[416B,576B:2)[672B,912r:2)[912r,976B:1)  0@176r 1@912r 2@416B-phi
+Assigning to physical register RDI: %vreg14 [240r,340r:0)  0@240r
+Assigning to physical register R8D: %vreg1 [16r,80B:1)[80B,224B:0)[416B,608r:0)[608r,672B:2)[672B,976B:0)  0@80B-phi 1@16r 2@608r

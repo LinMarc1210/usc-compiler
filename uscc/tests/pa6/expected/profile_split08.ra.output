@@ -1,0 +1,17 @@
+********** USCC REGISTER ALLOCATION **********
+********** Function: main
+Found neighbors = 3 for %vreg3 [704r,720r:0)  0@704r
+Removal: %vreg3 [704r,720r:0)  0@704r
+Found neighbors = 2 for %vreg12 [368r,468r:0)  0@368r
+Removal: %vreg12 [368r,468r:0)  0@368r
+Found neighbors = 2 for %vreg31 [16r,64B:0)[64B,352B:5)[544B,608r:5)[608r,672B:4)[672B,832r:5)[832r,896B:3)[896B,1056r:5)[1056r,1120B:2)[1120B,1184r:5)[1184r,1248B:1)  0@16r 1@1184r 2@1056r 3@832r 4@608r 5@64B-phi
+Removal: %vreg31 [16r,64B:0)[64B,352B:5)[544B,608r:5)[608r,672B:4)[672B,832r:5)[832r,896B:3)[896B,1056r:5)[1056r,1120B:2)[1120B,1184r:5)[1184r,1248B:1)  0@16r 1@1184r 2@1056r 3@832r 4@608r 5@64B-phi
+Found neighbors = 3 for %vreg32 [48r,64B:0)[64B,472r:5)[544B,576r:5)[576r,672B:4)[672B,800r:5)[800r,896B:3)[896B,1024r:5)[1024r,1120B:2)[1120B,1152r:5)[1152r,1248B:1)  0@48r 1@1152r 2@1024r 3@800r 4@576r 5@64B-phi
+Removal: %vreg32 [48r,64B:0)[64B,472r:5)[544B,576r:5)[576r,672B:4)[672B,800r:5)[800r,896B:3)[896B,1024r:5)[1024r,1120B:2)[1120B,1152r:5)[1152r,1248B:1)  0@48r 1@1152r 2@1024r 3@800r 4@576r 5@64B-phi
+Found neighbors = 0 for %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Removal: %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Assigning to physical register RAX: %vreg33 [176r,192r:0)[192r,224r:1)[224r,256r:2)[256r,288r:3)[288r,352B:4)[672B,768B:4)[896B,928r:4)[928r,944r:5)  0@176r 1@192r 2@224r 3@256r 4@288r 5@928r
+Assigning to physical register ESI: %vreg32 [48r,64B:0)[64B,472r:5)[544B,576r:5)[576r,672B:4)[672B,800r:5)[800r,896B:3)[896B,1024r:5)[1024r,1120B:2)[1120B,1152r:5)[1152r,1248B:1)  0@48r 1@1152r 2@1024r 3@800r 4@576r 5@64B-phi
+Assigning to physical register ECX: %vreg31 [16r,64B:0)[64B,352B:5)[544B,608r:5)[608r,672B:4)[672B,832r:5)[832r,896B:3)[896B,1056r:5)[1056r,1120B:2)[1120B,1184r:5)[1184r,1248B:1)  0@16r 1@1184r 2@1056r 3@832r 4@608r 5@64B-phi
+Assigning to physical register RDI: %vreg12 [368r,468r:0)  0@368r
+Assigning to physical register EDX: %vreg3 [704r,720r:0)  0@704r

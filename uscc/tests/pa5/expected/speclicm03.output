@@ -1,0 +1,73 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [16 x i32], align 8
+  %0 = getelementptr inbounds [16 x i32]* %arr, i32 0, i32 0
+  br label %while.body
+
+while.body:                                       ; preds = %entry, %while.body
+  %Phi20 = phi i32 [ 0, %entry ], [ %add, %while.body ]
+  %sub = sub i32 5, %Phi20
+  %1 = getelementptr inbounds i32* %0, i32 %Phi20
+  store i32 %sub, i32* %1
+  %add = add i32 %Phi20, 1
+  %lt = icmp slt i32 %add, 16
+  br i1 %lt, label %while.body, label %while.end, !prof !0
+
+while.end:                                        ; preds = %while.body
+  %2 = getelementptr inbounds i32* %0, i32 5
+  %3 = load i32* %2
+  br label %alias.header
+
+alias.header:                                     ; preds = %if.end, %while.end
+  %.alloca.0 = phi i32 [ %3, %while.end ], [ %.alloca.1, %if.end ]
+  %alias.0 = phi i1 [ false, %while.end ], [ %alias.2, %if.end ]
+  %Phi819 = phi i32 [ 0, %while.end ], [ %add9, %if.end ]
+  %Phi318 = phi i32 [ 0, %while.end ], [ %add15, %if.end ]
+  %neg.alias = icmp eq i1 %alias.0, false
+  br i1 %neg.alias, label %while.body5, label %alias.fixup
+
+alias.fixup:                                      ; preds = %alias.header
+  %4 = load i32* %2
+  br label %while.body5
+
+while.body5:                                      ; preds = %alias.header, %alias.fixup
+  %.alloca.1 = phi i32 [ %.alloca.0, %alias.header ], [ %4, %alias.fixup ]
+  %alias.1 = phi i1 [ %alias.0, %alias.header ], [ false, %alias.fixup ]
+  %add9 = add i32 %Phi819, %.alloca.1
+  %div = sdiv i32 %Phi318, 23
+  %mul = mul i32 %div, 23
+  %sub10 = sub i32 %Phi318, %mul
+  %eq = icmp eq i32 %sub10, 0
+  br i1 %eq, label %if.then, label %if.end, !prof !1
+
+while.end6:                                       ; preds = %if.end
+  %Phi8.lcssa = phi i32 [ %add9, %if.end ]
+  %5 = getelementptr inbounds [4 x i8]* @.str, i32 0, i32 0
+  %6 = call i32 (i8*, ...)* @printf(i8* %5, i32 %Phi8.lcssa)
+  ret i32 0
+
+if.then:                                          ; preds = %while.body5
+  %div11 = sdiv i32 %Phi318, 16
+  %mul12 = mul i32 %div11, 16
+  %sub13 = sub i32 %Phi318, %mul12
+  %7 = getelementptr inbounds i32* %0, i32 %sub13
+  %alias.cmp = icmp eq i32* %2, %7
+  store i32 %Phi318, i32* %7
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %while.body5
+  %alias.2 = phi i1 [ %alias.cmp, %if.then ], [ %alias.1, %while.body5 ]
+  %add15 = add i32 %Phi318, 1
+  %lt4 = icmp slt i32 %add15, 200
+  br i1 %lt4, label %alias.header, label %while.end6, !prof !2
+}
+
+!0 = metadata !{metadata !"branch_weights", i32 16, i32 1}
+!1 = metadata !{metadata !"branch_weights", i32 9, i32 191}
+!2 = metadata !{metadata !"branch_weights", i32 200, i32 1}

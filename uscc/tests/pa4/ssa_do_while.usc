@@ -1,0 +1,19 @@
+// ssa_do_while.usc
+// Tests do-while loop with counter (requires PHI at dowhile.body)
+
+int main()
+{
+	int x = 10;
+	int count = 0;
+
+	do
+	{
+		x = x - 1;
+		count = count + 1;
+	}
+	while (x > 0);
+
+	printf("%d\n", count);
+
+	return 0;
+}
