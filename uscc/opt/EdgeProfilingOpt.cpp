@@ -22,6 +22,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Pass skeleton and utils: Sanjay Madhav
+//  Feature: Optimized Edge Profiling via Knuth MST, tested by testEdgeProfiling.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "Passes.h"
 #include "EdgeProfilingUtils.h"
@@ -43,6 +47,9 @@ namespace uscc
 namespace opt
 {
 
+// Feature: Optimized Edge Profiling, tested by testEdgeProfiling.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Places probes only on non-tree edges of the maximum spanning tree
 bool EdgeProfilingOpt::runOnFunction(Function& F)
 {
     // Skip external declarations

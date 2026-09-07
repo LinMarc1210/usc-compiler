@@ -12,6 +12,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Pass skeleton: Sanjay Madhav
+//  Feature: Dead Block Removal, tested by testConstantDeadBlock.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 #include "Passes.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
@@ -27,7 +31,7 @@ namespace uscc
 {
 namespace opt
 {
-	
+
 // // 	==== version for succ_begin and succ_end ====
 // void entryDFS(BasicBlock *entry, std::set<BasicBlock*> &visitedSet) {
 	
@@ -43,6 +47,11 @@ namespace opt
 // 		}	
 // 	}
 // }
+
+
+// Feature: Dead Block Removal, tested by testConstantDeadBlock.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Finds unreachable basic blocks via DFS and removes them from the CFG
 
 bool DeadBlocks::runOnFunction(Function& F)
 {

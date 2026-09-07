@@ -15,6 +15,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Pass skeleton: Sanjay Madhav
+//  Feature: Instruction Combine and Constant Folding, tested by testInstcombine.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "Passes.h"
 #include <llvm/IR/Function.h>
@@ -83,6 +87,9 @@ StoreInst *reAssociate(LoadInst *LI)
 	return nullptr;
 }
 
+// Feature: Instruction Combine and Constant Folding, tested by testInstcombine.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Performs constant folding, algebraic simplifications, and expression reassociation
 bool InstCombine::runOnFunction(Function& F)
 {
 	bool changed = false;

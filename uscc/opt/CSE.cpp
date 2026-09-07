@@ -3,6 +3,10 @@
  *
  * A client of Available Expressions Analysis to perform
  * Common Subexpression Elimination.
+ *
+ * Pass skeleton and Search helper: Course staff
+ * Feature: Common Subexpression Elimination, tested by testAE.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
  */
 
 #include "Passes.h"
@@ -77,6 +81,9 @@ FunctionPass *llvm::createCSEPass() {
     return new CommonSubexpressionElimination();
 }
 
+// Feature: Common Subexpression Elimination, tested by testAE.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Replaces redundant computations with previously available expressions
 bool CommonSubexpressionElimination::runOnFunction(llvm::Function &F) {
     if (F.empty())
         return false;

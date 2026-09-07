@@ -1,6 +1,9 @@
 /**
  * A graph coloring based register allocation
- * Jianping Zeng (zeng207@purdue.edu)
+ * Pass skeleton: Jianping Zeng (zeng207@purdue.edu)
+ * Reference: Chaitin-Briggs Graph Coloring Register Allocation
+ * Feature: Graph Coloring Register Allocation, tested by testRegAlloc.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
 */
 #include "llvm/CodeGen/Passes.h"
 #include "../../llvm/lib/CodeGen/AllocationOrder.h"
@@ -143,6 +146,9 @@ void RAUSCC::releaseMemory() {
   // PA6: Delete any member data stored for each function
 }
 
+// Feature: Graph Coloring Register Allocation, tested by testRegAlloc.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Builds interference graph, simplifies nodes, handles spills, and colors registers
 bool RAUSCC::runOnMachineFunction(MachineFunction &mf) {
   errs() << "********** USCC REGISTER ALLOCATION **********\n";
   std::string funcName(mf.getName());

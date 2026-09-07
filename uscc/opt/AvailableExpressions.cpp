@@ -3,6 +3,10 @@
  * USC Compiler
  *
  * An iterative forward available expressions analysis.
+ *
+ * Pass skeleton and set helpers: Course staff / Jianping Zeng
+ * Feature: Available Expressions Analysis, tested by testAE.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
  */
 
 #include "Passes.h"
@@ -157,6 +161,9 @@ void AvailableExpressions::dumpAvailableExpressions(Function &F, unsigned iterat
 }
 
 
+// Feature: Available Expressions Analysis, tested by testAE.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Computes GEN/KILL sets and iterates worklist until fixed point
 bool AvailableExpressions::runOnFunction(Function &F) {
     if (F.empty())
         return false;

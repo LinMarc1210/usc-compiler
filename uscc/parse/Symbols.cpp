@@ -12,6 +12,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Symbol table skeleton: Sanjay Madhav
+//  Feature: SSA symbol tracking, tested by testSSA.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "Symbols.h"
 #include "Emitter.h"

@@ -1,6 +1,9 @@
 /**
  * USC Compiler
- * Jianping Zeng (zeng207@purdue.edu)
+ * Pass skeleton: Jianping Zeng (zeng207@purdue.edu)
+ * Feature: Speculative LICM, tested by testSpecLICM.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+ *
  * Speculative Loop Invariant Code Motion (SpecLICM).
 */
 
@@ -122,6 +125,9 @@ LoopPass *llvm::createSpecLICMPass() {
   return new SpecLICM();
 }
 
+// Feature: Speculative LICM, tested by testSpecLICM.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Hoists loads speculatively on frequent paths and inserts fixup blocks
 bool SpecLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
   // PA5: Implement if necessary
   changed = false;

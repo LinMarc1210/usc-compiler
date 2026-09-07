@@ -11,6 +11,11 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Interface skeleton: Sanjay Madhav
+//  Reference: Braun et al. 2013 "Simple and Efficient Construction of SSA Form"
+//  Feature: SSA Construction, tested by testSSA.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "SSABuilder.h"
 #include "../parse/Symbols.h"
@@ -36,7 +41,9 @@ using namespace uscc::opt;
 using namespace uscc::parse;
 using namespace llvm;
 
-// Called when a new function is started to clear out all the data
+// Feature: SSA Construction, tested by testSSA.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Resets SSA variable mappings for each function
 void SSABuilder::reset()
 {
 	// PA4: Implement

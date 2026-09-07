@@ -1,3 +1,9 @@
+//
+// Pass skeleton: Course staff
+// Feature: Copy Propagation, tested by testCopyProp.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//
+
 #include "llvm/Pass.h"
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
@@ -16,6 +22,9 @@ namespace opt
 		static char ID;
 		CopyPropagation() : FunctionPass(ID) {}
 
+	// Feature: Copy Propagation, tested by testCopyProp.py
+	// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+	// Intra-block store-to-load forwarding for array elements
 	virtual bool runOnFunction(Function &F) {
 		bool Changed = false;
 

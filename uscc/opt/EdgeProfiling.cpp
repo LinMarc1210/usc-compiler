@@ -20,6 +20,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Pass skeleton: Sanjay Madhav
+//  Feature: Naive Edge Profiling, tested by testEdgeProfiling.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "Passes.h"
 #include "EdgeProfilingUtils.h"
@@ -37,6 +41,9 @@ namespace uscc
 namespace opt
 {
 
+// Feature: Naive Edge Profiling, tested by testEdgeProfiling.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Instruments every CFG edge with paired logsrc and logdest probes
 bool EdgeProfiling::runOnFunction(Function& F)
 {
     // Skip external declarations

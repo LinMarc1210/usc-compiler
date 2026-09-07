@@ -4,11 +4,13 @@
  * (PLDI 2006) five-step pipeline: liveness, live-range splitting,
  * subrange coalescing, spill decision, spill code generation.
  *
+ * Pass skeleton and rule wrappers: Course staff / Jianping Zeng
+ * Feature: Profile-Guided Register Allocation, tested by testRegAlloc.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+ *
  * Step 1 (liveness) is LLVM's LiveIntervals analysis.
  * Step 5 (spill-everywhere) is LLVM's inline spiller.
- * Steps 2, 3, 4 are implemented below.  See PA6_IMPLEMENTATION.md
- * for which functions the student writes and which ship already
- * filled in.
+ * Steps 2, 3, 4 are implemented below.
  */
 #include "llvm/CodeGen/Passes.h"
 #include "../../llvm/lib/CodeGen/AllocationOrder.h"
@@ -241,9 +243,9 @@ void RAUSCCProfileSplit::releaseMemory() {
 	maxCount = 1;
 }
 
-// ----------------------------------------------------------------------
-// Entry point — maps 1:1 to the paper's 5-step pipeline.
-// ----------------------------------------------------------------------
+// Feature: Profile-Guided Register Allocation, tested by testRegAlloc.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Executes 5-step pipeline: splitting, coalescing, and profile-based spill decisions
 bool RAUSCCProfileSplit::runOnMachineFunction(MachineFunction &mf) {
 	errs() << "********** USCC PROFILE-SPLIT REGISTER ALLOCATION **********\n";
 	errs() << "********** Function: " << mf.getName() << '\n';

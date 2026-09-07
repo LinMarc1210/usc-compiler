@@ -1,6 +1,9 @@
 /**
  * USCC Compiler
- * Jianping Zeng (zeng207@purdue.edu)
+ * Pass skeleton and findDeadDefinitions helper: Jianping Zeng (zeng207@purdue.edu)
+ * Feature: Dead Code Elimination, tested by testLiveness.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+ *
  * A client of liveness to perform dead code elimination.
  * Note that this pass is different from the Dead Block Elimination that analyzes the reachability of each basic block
  * in a control flow graph (CFG) to determine if the basic block is dead.
@@ -55,6 +58,9 @@ void DeadCodeElimination::findDeadDefinitions(llvm::Instruction *inst,
     }
 }
 
+// Feature: Dead Code Elimination, tested by testLiveness.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Removes dead stores, dead compute instructions, and unused allocas
 bool DeadCodeElimination::runOnFunction(llvm::Function &F)
 {
     if (F.empty())

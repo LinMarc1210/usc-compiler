@@ -2,6 +2,10 @@
 //  ASTtoCode.cpp
 //  uscc
 //
+//  Framework: Sanjay Madhav
+//  Feature: Loop Invariant Lifting pretty printer, tested by testLifting.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//
 
 #include "ASTNodes.h"
 #include "Symbols.h"
@@ -19,6 +23,7 @@ using std::shared_ptr;
 	output << "    "; \
 }
 
+// Unparses AST back to human readable USC code for loop lifting validation
 ASTTOCODE(ASTProgram)
     // PA1: Implement
     // output << "Program:" << std::endl;

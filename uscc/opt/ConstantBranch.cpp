@@ -13,6 +13,10 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Pass skeleton: Sanjay Madhav
+//  Feature: Constant Branch Folding, tested by testConstantDeadBlock.py
+//  Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 #include "Passes.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
@@ -29,6 +33,9 @@ namespace uscc
 namespace opt
 {
 	
+// Feature: Constant Branch Folding, tested by testConstantDeadBlock.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Converts conditional branches with constant conditions into unconditional jumps
 bool ConstantBranch::runOnFunction(Function& F)
 {
 	bool changed = false;

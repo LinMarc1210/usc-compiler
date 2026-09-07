@@ -11,6 +11,9 @@
 //  This file is distributed under the BSD license.
 //  See LICENSE.TXT for details.
 //---------------------------------------------------------
+//  Framework and AST visitor skeleton: Sanjay Madhav
+//  Feature implementations: Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//---------------------------------------------------------
 
 #include "ASTNodes.h"
 #include "Emitter.h"
@@ -1216,8 +1219,10 @@ void ASTWhileStmt::RemovePreHeader(CodeContext& ctx) {
 }
 
 
+// Feature: Loop Peeling, tested by testPeeling.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Peels the first loop iteration before the loop body
 void ASTWhileStmt::emitIR_LoopPeeling(CodeContext& ctx) {
-  // PA1: Implement
   // Follow 6 steps in PA1 description.
   // Please refer to the 1st-loop-iteration peeling section 
 

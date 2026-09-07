@@ -1,3 +1,10 @@
+//
+// Pass skeleton and Graph SCC utility: Course staff
+// Reference: Braun et al. 2013 Algorithm 5
+// Feature: Redundant Phi Removal, tested by testPhi.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//
+
 #include "Graph.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/Statistic.h"
@@ -104,6 +111,9 @@ void RedundantPhiRemoval::replaceSCCByValue(std::set<Value*>& scc, Value* val, s
 }
 
 
+// Feature: Redundant Phi Removal, tested by testPhi.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Eliminates trivial and cyclic redundant phi nodes using SCC graph analysis
 bool RedundantPhiRemoval::runOnFunction(Function &F) {
 
   // PA4: Implement

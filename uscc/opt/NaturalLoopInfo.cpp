@@ -5,6 +5,10 @@
 // This file is distributed under the BSD License.
 // See LICENSE.TXT for details.
 //
+// Pass skeleton and output printing: Sanjay Madhav / Jianping Zeng
+// Feature: Natural Loop Detection, tested by testNaturalLoop.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+//
 //===----------------------------------------------------------------------===//
 //
 
@@ -66,6 +70,9 @@ void NaturalLoops::mapOutput(){
 
 }
 
+// Feature: Natural Loop Detection, tested by testNaturalLoop.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Finds back edges via DFS and dominator tree to build natural loops
 bool NaturalLoops::runOnFunction(Function &F)
 {
     //   PA2: Implement

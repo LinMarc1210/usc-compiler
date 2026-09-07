@@ -1,6 +1,9 @@
 /**
  * USCC Compiler
- * Jianping Zeng (zeng207@purdue.edu)
+ * Pass skeleton: Jianping Zeng (zeng207@purdue.edu)
+ * Feature: Backward Liveness Analysis, tested by testLiveness.py
+ * Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+ *
  * An iterative backward liveness analysis.
  * This pass intends to compute a set of live-out/in variables for each LLVM basic block
  * and maintain a set of LLVM instructions that are dead---not used by any following others.
@@ -62,6 +65,9 @@ void computePostOrder(BasicBlock *entry, set<BasicBlock *> &visited, deque<Basic
     order.push_back(entry);
 }
 
+// Feature: Liveness Analysis, tested by testLiveness.py
+// Implemented by Marc Lin <lin2315@purdue.edu, marc1210899@gmail.com>
+// Iterates backward dataflow equations to find live variables at each basic block
 bool Liveness::runOnFunction(Function &F)
 {
     if (F.empty())
